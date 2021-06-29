@@ -1,0 +1,42 @@
+JSS mecatronics co. LTD.    https://www.jss-motor.com/
+-----------------------------------------------------------
+
+Stepper motor
+-------------
+
+nema23 57HS 2 phase 1.8° hybrid stepper motor
+
+https://www.jss-motor.com/product/nema23-57HS-2-phase-1-8%C2%B0-hybrid-stepper-motor.html
+
+|          Item         |     Specifications    |
+|:---------------------:|:---------------------:|
+|  Step Angle Accuracy  |          ±5%          |
+|  Resistance Accuracy  |          ±10%         |
+|  Inductance Accuracy  |          ±20%         |
+|    Temperature Rise   |        80℃ Max       |
+|  Ambient Temperature  |       -20℃～+50℃     |
+| Insulation Resistance |    100MΩMin.500VDC    |
+|  Dielectric Strength  | 500VAC for one minute |
+|   Shaft Radial Play   |  0.02Max.(450g-load)  |
+|    Shaft Axial Play   |  0.08Max.(450g-load)  |
+
+
+
+Motor driver
+-------------
+
+DM860A 
+
+https://www.jss-motor.com/product/DM860A-2-phase-stepper-motor-driver.html
+
+Features
+
+1.  Adoption of 32-bit DSP, pure sine wave subdivision technology
+2.  Low-noise, low-vibration and low temperature rising
+3.  Voltage 24-80VAC
+4.  With 8 stalls output current setting, current 2.4-7.2A
+5.  With 16 stalls microstep subdivision setting
+6.  Automatic half current, self-test, over voltage, under voltage, over current protection
+7.  Internal optical isolation, highest frequency response 200KHZ
+8.  Suitable for nema 34, nema 42 stepper motor current under 7.2A
+
