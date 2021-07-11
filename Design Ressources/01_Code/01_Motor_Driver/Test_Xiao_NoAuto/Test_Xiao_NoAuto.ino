@@ -40,6 +40,14 @@
 */
 
 // -------------------------- Includes --------------------------
+
+// Limit switch + mode switch + Sequencial Analog read trimpots
+// These define's must be placed before #include "SAMDTimerInterrupt.h"
+//#define TIMER_INTERRUPT_DEBUG         0
+//#define _TIMERINTERRUPT_LOGLEVEL_     0
+//#include "SAMDTimerInterrupt.h"
+//#include "SAMD_ISR_Timer.h"
+
 // Stepper motor driver
 #include <AccelStepper.h>
 
@@ -57,13 +65,24 @@ const uint8_t PIN_MOTOR_STEP   = 5; // Digital output 3.3V
 const uint8_t PIN_MOTOR_DIR    = 4; // Digital output 3.3V
 const uint8_t PIN_MOTOR_ENA    = 6; // Digital output 3.3V, manual logic
 
-const uint16_t microSteppingFactorList[]    = {1, 200}; // Handled exclusively by the motor driver
-const uint8_t indx_microSteppingFactorList = 1; // Says to this program which physical microSteppingFactor is currently on the motor driver
-const uint8_t microSteppingFactor = 200;
-const uint8_t pulsesPerRevolution = 200 * microSteppingFactor;
+const uint16_t microSteppingFactorList[]    = {1,4,8,16,32,64,128,256,5,10,20,25,40,50,100,200}; // Handled exclusively by the motor driver - I know, it is not sorted ascendedly but what can I do?
+const uint8_t indx_microSteppingFactorList = 0; // Says to this program which physical microSteppingFactor is currently on the motor driver
+const uint8_t nativePulsesPerRevolution = 200; // This parameter is from the motor and CANNOT be changed
+const uint8_t microstepsPerRevolution = microSteppingFactorList[indx_microSteppingFactorList] * nativePulsesPerRevolution;
+
+// Since it can be changed during a "limit switch" or "end travel" distance
+//  calibration, this parameter cannot be const and #define is a bad idea
+// BOTH paramters have to be updated during a calibration
+// TODO: only choose 1
+//double angleToDistance = 2.0*3.14159265359*5.0/360.0; // [mm/°] // <------ TODO: This is a random value
+//double distanceToAngle = 1/angleToDistance; // [°/mm]
 
 
-uint16_t nbr_revolutions = 1;
+uint16_t nbr_desiredRevolutions = 1;
+
+
+// Frequency scale factor
+// Asmplitude scale factor
 
 // Scenarios handling
 //const uint8_t NBR_SCENARIOS
@@ -87,8 +106,8 @@ const uint8_t PIN_TRMPT_AMPL    = A1; // Analog input 3.3V
 //uint32_t scenarioPos
 
 // Mode handling
-uint8_t crnt_Mode = MODE_MANUAL;
-uint8_t prev_Mode = MODE_MANUAL;
+//uint8_t crnt_Mode = MODE_MANUAL;
+//uint8_t prev_Mode = MODE_MANUAL;
 
 // Define a stepper and the pins it will use
 // Precise that we use a dedicated stepper driver, thus we have 2 pins: STEP and DIR (ENA is handled manually)
@@ -109,8 +128,6 @@ void setup()
 	// Indicate the start of the setup with the red on-board LED
 	//------------------------------------------------------------
 	digitalWrite(LED_BUILTIN, HIGH);   // Turn the LED ON
-	delay(10);                         // Wait a bit
-
 
   // Limit switches pins
   pinMode(PIN_LIMIT_RIGHT, INPUT);
@@ -128,26 +145,53 @@ void setup()
   // Disable the motor (logic inverse)
   digitalWrite(PIN_MOTOR_ENA,HIGH);
 
-  Serial.begin(115200);
+
   Serial.println("---------------------------------");
-  Serial.println("Welcome to the stepper motor test");
+  //Serial.print(F("\nStarting stepper motor test on ")); Serial.println(BOARD_NAME);
+  //Serial.println(SAMD_TIMER_INTERRUPT_VERSION);
+  //Serial.print(F("CPU Frequency = ")); Serial.print(F_CPU / 1000000); Serial.println(F(" MHz"));
+
+
+//  Serial.println("Reading frequency trimpot");
+//  // read the value from the sensor:
+//  int sensor1Value = analogRead(PIN_TRMPT_FREQ);
+//  // Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
+//  float voltage1 = sensor1Value * (3.3 / 1023.0);
+//  // print out the value you read:
+//  //Serial.println(voltage1);
+//  Serial.println(sensor1Value);
+//
+//    Serial.println("Reading amplitude trimpot");
+//  // read the value from the sensor:
+//  int sensor2Value = analogRead(PIN_TRMPT_AMPL);
+//  // Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
+//  float voltage2 = sensor1Value * (3.3 / 1023.0);
+//  // print out the value you read:
+//  //Serial.println(voltage1);
+//  Serial.println(sensor2Value);
+
+  Serial.print("Current micro-steps settings: ");
+  Serial.println(microSteppingFactorList[indx_microSteppingFactorList]);
+
+  Serial.print("Current micro-steps per rotation: ");
+  Serial.println(microstepsPerRevolution);
 
   
   Serial.print("Setting max speed to ");
   Serial.println();
-  stepper.setMaxSpeed(50000 * microSteppingFactor);
+  stepper.setMaxSpeed(50000 * microSteppingFactorList[indx_microSteppingFactorList]);
   Serial.print("New max speed is ");
   Serial.println();
 
   Serial.print("Setting max speed to ");
   Serial.println();
-  stepper.setAcceleration(10000 * microSteppingFactor);
+  stepper.setAcceleration(10000 * microSteppingFactorList[indx_microSteppingFactorList]);
   Serial.print("New max speed is ");
   Serial.println();
 
   Serial.print("Setting position to reach ");
   Serial.println();
-  stepper.moveTo(nbr_revolutions * pulsesPerRevolution * microSteppingFactor);
+  stepper.moveTo(nbr_desiredRevolutions *  microSteppingFactorList[indx_microSteppingFactorList]);
 
 
 } // END OF SETUP
