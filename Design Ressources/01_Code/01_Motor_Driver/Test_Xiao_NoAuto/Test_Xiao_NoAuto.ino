@@ -1,6 +1,6 @@
 /* ========================================
 *
-* Copyright Tonkin and Taylor Ltd, 2021
+* Copyright University of Auckland, 2021
 * All Rights Reserved
 * UNPUBLISHED, LICENSED SOFTWARE.
 *
@@ -26,8 +26,8 @@
 * AccelStepper:             http://www.airspayce.com/mikem/arduino/AccelStepper/Blocking_8pde-example.html
 *                           https://github.com/waspinator/AccelStepper
 *                         
-* Github project:           https://github.com/Saultes45/Mini-Shake-Table-UoA
-* PCB EsayEDA:               
+* Github project (public):  https://github.com/Saultes45/Mini-Shake-Table-UoA
+* PCB EsayEDA (private):    https://easyeda.com/account/project/setting/basic?project=f569670f797046d5bf32fa1eb878fbe5               
 * Motor driver:             https://www.jss-motor.com/product_category/Stepper-motor-drivers.html
 *                           https://www.jss-motor.com/product/DM860A-2-phase-stepper-motor-driver.html
 *
@@ -53,9 +53,9 @@
 #define MODE_MANUAL 0u  // Use the 2 trimpots to describe the motion
 
 // Stepper motor driver pins (logic low)
-const uint8_t PIN_MOTOR_STEP   = 2; // Digital output 3.3V
-const uint8_t PIN_MOTOR_DIR    = 3; // Digital output 3.3V
-const uint8_t PIN_MOTOR_ENA    = 4; // Digital output 3.3V, manual logic
+const uint8_t PIN_MOTOR_STEP   = 5; // Digital output 3.3V
+const uint8_t PIN_MOTOR_DIR    = 4; // Digital output 3.3V
+const uint8_t PIN_MOTOR_ENA    = 6; // Digital output 3.3V, manual logic
 
 const uint16_t microSteppingFactorList[]    = {1, 200}; // Handled exclusively by the motor driver
 const uint8_t indx_microSteppingFactorList = 1; // Says to this program which physical microSteppingFactor is currently on the motor driver
@@ -69,12 +69,15 @@ uint16_t nbr_revolutions = 1;
 //const uint8_t NBR_SCENARIOS
 
 // Limit switches pins
-const uint8_t PIN_LIMIT_RIGHT   = 8; // Digital input 3.3V
-const uint8_t PIN_LIMIT_LEFT    = 9; // Digital input 3.3V
+const uint8_t PIN_LIMIT_RIGHT   = 9;  // Digital input 3.3V
+const uint8_t PIN_LIMIT_LEFT    = 10; // Digital input 3.3V
+
+// Mode selection
+const uint8_t PIN_MODE          = 8; // Digital input 3.3V
 
 // Trimpot pins
-const uint8_t PIN_TRMPT_FREQ          = A0; // Analog input 3.3V
-const uint8_t PIN_TRMPT_AMPL          = A1; // Analog input 3.3V
+const uint8_t PIN_TRMPT_FREQ    = A0; // Analog input 3.3V
+const uint8_t PIN_TRMPT_AMPL    = A1; // Analog input 3.3V
 
 
 
