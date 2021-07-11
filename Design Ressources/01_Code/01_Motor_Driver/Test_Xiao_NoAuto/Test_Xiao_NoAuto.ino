@@ -57,15 +57,15 @@
 #define CONSOLE_BAUD_RATE             115200  // Baudrate in [bauds] for serial communication to the console
 
 // Modes
-#define MODE_AUTO   1u  // Wait orders and scenarios from the Raspberry pi through USB (UART)
-#define MODE_MANUAL 0u  // Use the 2 trimpots to describe the motion
+//#define MODE_AUTO   1u  // Wait orders and scenarios from the Raspberry pi through USB (UART)
+//#define MODE_MANUAL 0u  // Use the 2 trimpots to describe the motion
 
 // Stepper motor driver pins (logic low)
 const uint8_t PIN_MOTOR_STEP   = 5; // Digital output 3.3V
 const uint8_t PIN_MOTOR_DIR    = 4; // Digital output 3.3V
 const uint8_t PIN_MOTOR_ENA    = 6; // Digital output 3.3V, manual logic
 
-const uint16_t microSteppingFactorList[]    = {1,4,8,16,32,64,128,256,5,10,20,25,40,50,100,200}; // Handled exclusively by the motor driver - I know, it is not sorted ascendedly but what can I do?
+const uint16_t microSteppingFactorList[]    = {1, 4, 8, 16, 32, 64, 128, 256, 5, 10, 20, 25, 40, 50, 100, 200}; // Handled exclusively by the motor driver - I know, it is not sorted ascendedly but what can I do?
 const uint8_t indx_microSteppingFactorList = 0; // Says to this program which physical microSteppingFactor is currently on the motor driver
 const uint8_t nativePulsesPerRevolution = 200; // This parameter is from the motor and CANNOT be changed
 const uint8_t microstepsPerRevolution = microSteppingFactorList[indx_microSteppingFactorList] * nativePulsesPerRevolution;
@@ -129,14 +129,14 @@ void setup()
 	//------------------------------------------------------------
 	digitalWrite(LED_BUILTIN, HIGH);   // Turn the LED ON
 
-  // Limit switches pins
-  pinMode(PIN_LIMIT_RIGHT, INPUT);
-  pinMode(PIN_LIMIT_LEFT, INPUT);
-
-
-  // Trimpot pins
-  pinMode(PIN_TRMPT_FREQ, INPUT);
-  pinMode(PIN_TRMPT_AMPL, INPUT);
+//  // Limit switches pins
+//  pinMode(PIN_LIMIT_RIGHT, INPUT);
+//  pinMode(PIN_LIMIT_LEFT, INPUT);
+//
+//
+//  // Trimpot pins
+//  pinMode(PIN_TRMPT_FREQ, INPUT);
+//  pinMode(PIN_TRMPT_AMPL, INPUT);
 
 
   // initialize digital pin PIN_MOTOR_ENA as an output.
