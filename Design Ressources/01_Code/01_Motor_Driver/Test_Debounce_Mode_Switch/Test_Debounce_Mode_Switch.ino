@@ -7,11 +7,11 @@
 #define DEBOUNCE_TIME 10 // millisecond button debouncing time
 
 volatile bool flagMode = false; 
+volatile unsigned long last_interrupt_time = 0;
 
 void buttonISR() 
 {
      noInterrupts();
- static unsigned long last_interrupt_time = 0;
  unsigned long interrupt_time = millis();
  // If interrupts come faster than 200ms, assume it's a bounce and ignore
  if (interrupt_time - last_interrupt_time > 200) 
@@ -37,7 +37,7 @@ void loop() {
     // empty right now, add code as needed.
     if (flagMode)
     {
-      flagMode != flagMode;
+      flagMode = false;
       Serial.print("Mode change with time: ");
       Serial.println(millis());
     }
