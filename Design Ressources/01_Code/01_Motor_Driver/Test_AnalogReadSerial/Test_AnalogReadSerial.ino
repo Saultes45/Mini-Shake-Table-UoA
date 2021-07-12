@@ -10,17 +10,45 @@
   https://www.arduino.cc/en/Tutorial/BuiltInExamples/AnalogReadSerial
 */
 
-// the setup routine runs once when you press reset:
-void setup() {
-  // initialize serial communication at 9600 bits per second:
+
+#include "MedianFilterLib2.h"
+
+uint16_t median1 = 0;
+uint16_t sensorValue1 = 0;
+MedianFilter2<int> medianFilter1(200);
+
+uint16_t median2 = 0;
+uint16_t sensorValue2 = 0;
+MedianFilter2<int> medianFilter2(200);
+
+
+void setup() 
+{
   Serial.begin(115200);
 }
 
-// the loop routine runs over and over again forever:
-void loop() {
+
+void loop() 
+{
   // read the input on analog pin 0:
-  int sensorValue = analogRead(A0);
-  // print out the value you read:
-  Serial.println(sensorValue);
-  delay(10);        // delay in between reads for stability
+  sensorValue1 = analogRead(A0);
+  median1 = medianFilter1.AddValue(sensorValue1);
+
+
+  
+  // read the input on analog pin 0:
+  sensorValue2 = analogRead(A1);
+  median2 = medianFilter2.AddValue(sensorValue2);
+
+  Serial.print(sensorValue1);
+  Serial.print(" ");
+  Serial.print(median1);
+  Serial.print(" ");
+  Serial.print(sensorValue2);
+  Serial.print(" ");
+  Serial.println(median2);
+  
+  
+  
+  delay(1);        // delay in between reads for stability
 }
