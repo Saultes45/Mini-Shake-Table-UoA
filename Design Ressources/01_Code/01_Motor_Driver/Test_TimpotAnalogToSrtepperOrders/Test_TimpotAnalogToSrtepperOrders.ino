@@ -40,8 +40,8 @@ const uint8_t PIN_TRMPT_FREQ    = A0; // Analog input 3.3V
 const uint8_t PIN_TRMPT_AMPL    = A1; // Analog input 3.3V
 
 // Trimpots deadbands ([LSB] or [V] or [frequency]) -> LSB
-const uint16_t TRMPT_DEADBAND_FREQ    = 10;
-const uint16_t TRMPT_DEADBAND_AMPL    = 1;
+const uint16_t TRMPT_DEADBAND_FREQ    = 100;
+const uint16_t TRMPT_DEADBAND_AMPL    = 500;
 
 
 // precision  (trimpot_frequency_max - trimpot_frequency_min) / 1024
@@ -88,13 +88,13 @@ void loop()
   current_trimpotAmplitude_filtered = median2 * (trimpot_amplitude_max - trimpot_amplitude_min)/XIAO_ADC_MAX_LSB;
 
 // Raw values
-//  Serial.print(sensorValue1);
-//  Serial.print(" ");
-//  Serial.print(median1);
-//  Serial.print(" ");
-//  Serial.print(sensorValue2);
-//  Serial.print(" ");
-//  Serial.println(median2);
+  Serial.print(sensorValue1);
+  Serial.print(" ");
+  Serial.print(median1);
+  Serial.print(" ");
+  Serial.print(sensorValue2);
+  Serial.print(" ");
+  Serial.println(median2);
 
 // Prints
 
