@@ -46,12 +46,16 @@ const uint16_t TRMPT_DEADBAND_AMPL    = 500;
 
 // precision  (trimpot_frequency_max - trimpot_frequency_min) / 1024
 // 0.97Hz/LSB
+float trimpot_frequency_range_max_lsb = XIAO_ADC_MAX_LSB;
+float trimpot_frequency_range_min_lsb = 6.0;
 float trimpot_frequency_max = 1000; // in [Hz]
 float trimpot_frequency_min = 0.0; // in [Hz]
 // to use with stepper.setAcceleration
 
 // amplitude  (trimpot_amplitude_max - trimpot_amplitude_min) / 1024
 // 9.765625E-4 stepper shaft rotations/LSB
+float trimpot_frequency_range_max_lsb = XIAO_ADC_MAX_LSB;
+float trimpot_frequency_range_min_lsb = 6.0;
 float trimpot_amplitude_max = 0.5; // in [stepper shaft rotations]
 float trimpot_amplitude_min = 0.0; // in [stepper shaft rotations]
 // to use with : stepper.moveTo
@@ -73,7 +77,7 @@ void loop()
     sensorValue1 = 0;
     }
   median1 = medianFilter1.AddValue(sensorValue1);
-  current_trimpotFrequency_filtered = median1 * (trimpot_frequency_max - trimpot_frequency_min)/XIAO_ADC_MAX_LSB;
+  current_trimpotFrequency_filtered = (median1-trimpot_frequency_range_min_lsb) * (trimpot_frequency_max - trimpot_frequency_min)/(trimpot_frequency_range_max_lsb-trimpot_frequency_range_min_lsb) + trimpot_frequency_min;
 
   
   // read the input on analog pin 1:
@@ -85,7 +89,7 @@ void loop()
     sensorValue2 = 0;
     }
   median2 = medianFilter2.AddValue(sensorValue2);
-  current_trimpotAmplitude_filtered = median2 * (trimpot_amplitude_max - trimpot_amplitude_min)/XIAO_ADC_MAX_LSB;
+  current_trimpotAmplitude_filtered = (median2-trimpot_amplitude_range_min_lsb) * (trimpot_amplitude_max - trimpot_amplitude_min)/(trimpot_amplitude_range_max_lsb-trimpot_amplitude_range_min_lsb) + trimpot_amplitude_min;
 
 // Raw values
   Serial.print(sensorValue1);
