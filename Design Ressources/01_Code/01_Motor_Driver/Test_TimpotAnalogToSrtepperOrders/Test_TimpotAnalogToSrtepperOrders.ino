@@ -11,6 +11,8 @@
 */
 
 
+// Possible improvement: remove deadband from the ADC range in the conversion
+
 #include "MedianFilterLib2.h"
 
 
