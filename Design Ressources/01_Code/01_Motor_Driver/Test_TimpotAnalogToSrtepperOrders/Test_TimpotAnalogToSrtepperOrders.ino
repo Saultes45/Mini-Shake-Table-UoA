@@ -40,8 +40,8 @@ const uint8_t PIN_TRMPT_FREQ    = A0; // Analog input 3.3V
 const uint8_t PIN_TRMPT_AMPL    = A1; // Analog input 3.3V
 
 // Trimpots deadbands ([LSB] or [V] or [frequency]) -> LSB
-const uint16_t TRMPT_DEADBAND_FREQ    = 0;
-const uint16_t TRMPT_DEADBAND_AMPL    = 0;
+const uint16_t TRMPT_DEADBAND_FREQ    = 25;
+const uint16_t TRMPT_DEADBAND_AMPL    = 25;
 
 
 // precision  (trimpot_frequency_max - trimpot_frequency_min) / 1024

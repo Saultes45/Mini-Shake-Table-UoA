@@ -1,0 +1,7 @@
+00 final version
+01 Overall logic and sequencing
+02 Limit switches
+03 Trimpots
+04 Mode select
+05 Stepper
+06 Scenario mode and UART comm to PC
