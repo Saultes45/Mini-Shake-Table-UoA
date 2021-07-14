@@ -28,7 +28,16 @@
 */
 
 
-#include <TimerTCC0.h>
+//#define USE_TC3
+
+
+#ifdef USE_TC3
+  #include <TimerTC3.h>
+#else
+  #include <TimerTCC0.h>
+#endif
+
+
 
 #define CONSOLE_BAUD_RATE             115200  // Baudrate in [bauds] for serial communication to the console
 
@@ -88,8 +97,14 @@ void setup()
     Serial.begin(CONSOLE_BAUD_RATE);
     pinMode(13, OUTPUT);    
 
+#ifdef USE_TC3
+      TimerTc3.initialize(10000);
+    TimerTc3.attachInterrupt(timerIsr);
+#else
     TimerTcc0.initialize(10000); // 1e6 = 1s
     TimerTcc0.attachInterrupt(timerIsr);
+#endif
+
 
 }
 
