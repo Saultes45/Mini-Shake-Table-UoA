@@ -40,8 +40,8 @@ const uint8_t PIN_TRMPT_FREQ    = A0; // Analog input 3.3V
 const uint8_t PIN_TRMPT_AMPL    = A1; // Analog input 3.3V
 
 // Trimpots deadbands ([LSB] or [V] or [frequency]) -> LSB
-const uint16_t TRMPT_DEADBAND_FREQ    = 100;
-const uint16_t TRMPT_DEADBAND_AMPL    = 500;
+const uint16_t TRMPT_DEADBAND_FREQ    = 0;
+const uint16_t TRMPT_DEADBAND_AMPL    = 0;
 
 
 // precision  (trimpot_frequency_max - trimpot_frequency_min) / 1024
@@ -54,8 +54,8 @@ float trimpot_frequency_min = 0.0; // in [Hz]
 
 // amplitude  (trimpot_amplitude_max - trimpot_amplitude_min) / 1024
 // 9.765625E-4 stepper shaft rotations/LSB
-float trimpot_frequency_range_max_lsb = XIAO_ADC_MAX_LSB;
-float trimpot_frequency_range_min_lsb = 6.0;
+float trimpot_amplitude_range_max_lsb = XIAO_ADC_MAX_LSB;
+float trimpot_amplitude_range_min_lsb = 6.0;
 float trimpot_amplitude_max = 0.5; // in [stepper shaft rotations]
 float trimpot_amplitude_min = 0.0; // in [stepper shaft rotations]
 // to use with : stepper.moveTo
@@ -78,6 +78,14 @@ void loop()
     }
   median1 = medianFilter1.AddValue(sensorValue1);
   current_trimpotFrequency_filtered = (median1-trimpot_frequency_range_min_lsb) * (trimpot_frequency_max - trimpot_frequency_min)/(trimpot_frequency_range_max_lsb-trimpot_frequency_range_min_lsb) + trimpot_frequency_min;
+if (current_trimpotFrequency_filtered < trimpot_frequency_min)
+{
+  current_trimpotFrequency_filtered = trimpot_frequency_min;
+}
+else if(current_trimpotFrequency_filtered > trimpot_frequency_max)
+{
+  current_trimpotFrequency_filtered = trimpot_frequency_max;
+}
 
   
   // read the input on analog pin 1:
@@ -90,21 +98,31 @@ void loop()
     }
   median2 = medianFilter2.AddValue(sensorValue2);
   current_trimpotAmplitude_filtered = (median2-trimpot_amplitude_range_min_lsb) * (trimpot_amplitude_max - trimpot_amplitude_min)/(trimpot_amplitude_range_max_lsb-trimpot_amplitude_range_min_lsb) + trimpot_amplitude_min;
+  if (current_trimpotAmplitude_filtered < trimpot_amplitude_min)
+  {
+    current_trimpotAmplitude_filtered = trimpot_amplitude_min;
+  }
+  else if(current_trimpotAmplitude_filtered > trimpot_amplitude_max)
+  {
+    current_trimpotAmplitude_filtered = trimpot_amplitude_max;
+  }
+
+
 
 // Raw values
-  Serial.print(sensorValue1);
-  Serial.print(" ");
-  Serial.print(median1);
-  Serial.print(" ");
-  Serial.print(sensorValue2);
-  Serial.print(" ");
-  Serial.println(median2);
+//  Serial.print(sensorValue1);
+//  Serial.print(" ");
+//  Serial.print(median1);
+//  Serial.print(" ");
+//  Serial.print(sensorValue2);
+//  Serial.print(" ");
+//  Serial.println(median2);
 
 // Prints
 
-//Serial.print(current_trimpotFrequency_filtered);
-//Serial.print(" ");
-//Serial.println(current_trimpotAmplitude_filtered);
+Serial.print(current_trimpotFrequency_filtered);
+Serial.print(" ");
+Serial.println(current_trimpotAmplitude_filtered);
   
   
   
