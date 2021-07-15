@@ -32,9 +32,9 @@
 
 
 #ifdef USE_TC3
-  #include <TimerTC3.h>
+#include <TimerTC3.h>
 #else
-  #include <TimerTCC0.h>
+#include <TimerTCC0.h>
 #endif
 
 // -------------------------- Defines --------------------------
@@ -61,7 +61,7 @@ const uint8_t PIN_TRMPT_AMPL    = A1; // Analog input 3.3V
 // -------------------------- Global variables ----------------
 bool isLEDOn = false;
 
-volatile bool           flagMode            = false; 
+volatile bool           flagMode            = false;
 volatile unsigned long  last_interrupt_time = 0;
 
 // Mode handling
@@ -72,134 +72,134 @@ volatile unsigned long  last_interrupt_time = 0;
 // -------------------------- ISR ----------------
 
 //******************************************************************************************
-void toggleSwitchModeISR() 
+void toggleSwitchModeISR()
 {
-     noInterrupts();
- unsigned long interrupt_time = millis();
- // If interrupts come faster than LS_DEBOUNCE_TIME, assume it's a bounce and ignore
- if (interrupt_time - last_interrupt_time > DEBOUNCE_TIME) 
- {
-    flagMode = true; 
-    //digitalWrite(LED_BUILTIN, digitalRead(BUTTON)); 
- }
- last_interrupt_time = interrupt_time;
-     interrupts();
+	noInterrupts();
+	unsigned long interrupt_time = millis();
+	// If interrupts come faster than LS_DEBOUNCE_TIME, assume it's a bounce and ignore
+	if (interrupt_time - last_interrupt_time > DEBOUNCE_TIME)
+	{
+		flagMode = true;
+		//digitalWrite(LED_BUILTIN, digitalRead(BUTTON));
+	}
+	last_interrupt_time = interrupt_time;
+	interrupts();
 }
 
 //******************************************************************************************
 void timerTrimpotISR()
-{    
+{
 
-/* NOTICE: 
- *  Do NOT put noInterupts(); here because this is a low priority and long execution time "task"
- *  Limit switches IRS should be able to trigger in there
+	/* NOTICE:
+*  Do NOT put noInterupts(); here because this is a low priority and long execution time "task"
+*  Limit switches IRS should be able to trigger in there
 */
 
-  // Local variable declaration
-  //----------------------------
-  uint16_t sensorValue1 = 0;
-  uint16_t sensorValue2 = 0;
+	// Local variable declaration
+	//----------------------------
+	uint16_t sensorValue1 = 0;
+	uint16_t sensorValue2 = 0;
 
-  
-    // Visual indication
-    //-------------------
-    digitalWrite(LED_BUILTIN, isLEDOn);
-    isLEDOn = !isLEDOn;
 
-    // Trimpot read and process
-    //-------------------------
-    
-    // read the input on analog pin 0:
-    sensorValue1 = analogRead(PIN_TRMPT_FREQ);
-  
-  
-    // read the input on analog pin 1:
-    sensorValue2 = analogRead(PIN_TRMPT_AMPL);
-  
+	// Visual indication
+	//-------------------
+	digitalWrite(LED_BUILTIN, isLEDOn);
+	isLEDOn = !isLEDOn;
 
-    // Display (for  <DEBUG> only)
-    //----------------------------
+	// Trimpot read and process
+	//-------------------------
+	
+	// read the input on analog pin 0:
+	sensorValue1 = analogRead(PIN_TRMPT_FREQ);
 
-    Serial.print(sensorValue1);
-    Serial.print(" ");
-    Serial.println(sensorValue2);
-     
+
+	// read the input on analog pin 1:
+	sensorValue2 = analogRead(PIN_TRMPT_AMPL);
+
+
+	// Display (for  <DEBUG> only)
+	//----------------------------
+
+	Serial.print(sensorValue1);
+	Serial.print(" ");
+	Serial.println(sensorValue2);
+	
 }
 
 
 // -------------------------- SetUp --------------------------
-void setup() 
+void setup()
 {
 
-    Serial.begin(CONSOLE_BAUD_RATE);
-    pinMode(LED_BUILTIN, OUTPUT);
+	Serial.begin(CONSOLE_BAUD_RATE);
+	pinMode(LED_BUILTIN, OUTPUT);
 
-  // initialize the LED pin as an output:
-   
-   // initialize the pushbutton pin as an input
-   pinMode(PIN_TOGGLE_MODE, INPUT);
-   attachInterrupt(digitalPinToInterrupt(PIN_TOGGLE_MODE), toggleSwitchModeISR, CHANGE); //toggleSwitchModeISR
+	// initialize the LED pin as an output:
 
-     /* After this attachInterrupt, be careful not to toggle the 
-      *  mode switch of the timers for the trimpots will never start
-      */
+	// initialize the pushbutton pin as an input
+	pinMode(PIN_TOGGLE_MODE, INPUT);
+	attachInterrupt(digitalPinToInterrupt(PIN_TOGGLE_MODE), toggleSwitchModeISR, CHANGE); //toggleSwitchModeISR
 
-//if (MODE_START == MODE_MANUAL)
-//
-//{
-//  #ifdef USE_TC3
-//      TimerTc3.initialize(10000);
-//      TimerTc3.attachInterrupt(timerTrimpotISR);
-//  #else
-//      TimerTcc0.initialize(10000); // 1e6 = 1s
-//      TimerTcc0.attachInterrupt(timerTrimpotISR);
-//  #endif
-//}
+	/* After this attachInterrupt, be careful not to toggle the
+	*  mode switch of the timers for the trimpots will never start
+	*/
 
-// Enable the flag virtually, just once at the start as to read the location of the toggle switch
-flagMode = true;
+	//if (MODE_START == MODE_MANUAL)
+	//
+	//{
+	//  #ifdef USE_TC3
+	//      TimerTc3.initialize(10000);
+	//      TimerTc3.attachInterrupt(timerTrimpotISR);
+	//  #else
+	//      TimerTcc0.initialize(10000); // 1e6 = 1s
+	//      TimerTcc0.attachInterrupt(timerTrimpotISR);
+	//  #endif
+	//}
+
+	// Enable the flag virtually, just once at the start as to read the location of the toggle switch
+	flagMode = true;
 
 
 }
 
 
 // -------------------------- Loop --------------------------
-void loop() 
-{  
-    if (flagMode)
-    {
-      flagMode = false; // Reset the flag immediatly
+void loop()
+{
+	if (flagMode)
+	{
+		flagMode = false; // Reset the flag immediatly
 
-      // Since the toggle switch ISR is triggered on 
-      //  change, read the final and debounced state
-      if (digitalRead(PIN_TOGGLE_MODE) == MODE_MANUAL)
-      {
-        // If we are in Manual, then attach the timer interrupt to read the trimpots
-        
-        #ifdef USE_TC3
-        TimerTc3.initialize(10000);
-        TimerTc3.attachInterrupt(timerTrimpotISR);
-        #else
-        TimerTcc0.initialize(10000); // 1e6 = 1s
-        TimerTcc0.attachInterrupt(timerTrimpotISR);
-        #endif
-      }
-      else
-      {
-        // If we are in Auto or (Scenario), then detach the 
-        //  timer interrupt to stop reading the trimpots
+		// Since the toggle switch ISR is triggered on
+		//  change, read the final and debounced state
+		if (digitalRead(PIN_TOGGLE_MODE) == MODE_MANUAL)
+		{
+			// If we are in Manual, then attach the timer interrupt to read the trimpots
+			
+			#ifdef USE_TC3
+			TimerTc3.initialize(10000);
+			TimerTc3.attachInterrupt(timerTrimpotISR);
+			#else
+			TimerTcc0.initialize(10000); // 1e6 = 1s
+			TimerTcc0.attachInterrupt(timerTrimpotISR);
+			#endif
+		}
+		else
+		{
+			// If we are in Auto or (Scenario), then detach the
+			//  timer interrupt to stop reading the trimpots
 
-        #ifdef USE_TC3
-        TimerTc3.initialize(10000);
-        TimerTc3.detachInterrupt();
-        #else
-        TimerTcc0.initialize(10000); // 1e6 = 1s
-        TimerTcc0.detachInterrupt();
-        #endif
-      
-      }
-      
-      //Serial.print("Mode change with time: ");
-      //Serial.println(millis());
-    }
+			#ifdef USE_TC3
+			TimerTc3.initialize(10000);
+			TimerTc3.detachInterrupt();
+			#else
+			TimerTcc0.initialize(10000); // 1e6 = 1s
+			TimerTcc0.detachInterrupt();
+			#endif
+			
+		}
+		
+		//Serial.print("Mode change with time: ");
+		//Serial.println(millis());
+	}
 }
