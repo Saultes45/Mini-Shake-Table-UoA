@@ -28,7 +28,7 @@
 */
 
 // -------------------------- Includes --------------------------
-//#define USE_TC3
+#define USE_TC3
 
 
 #ifdef USE_TC3
@@ -43,11 +43,13 @@
 #define CONSOLE_BAUD_RATE             115200  // Baudrate in [bauds] for serial communication to the console
 
 #define PIN_TOGGLE_MODE  8        // Can be any I/O pin from 0 to 10
-#define DEBOUNCE_TIME 10 // millisecond button debouncing time
+#define DEBOUNCE_TIME 50 // millisecond button debouncing time
 // Modes
-#define MODE_AUTO   1u  // Wait orders and scenarios from the Raspberry pi through USB (UART)
-#define MODE_MANUAL 0u  // Use the 2 trimpots to describe the motion
-#define MODE_START  MODE_MANUAL // tells the program which mode should be enabled when starting
+#define MODE_AUTO   0u  // Wait orders and scenarios from the Raspberry pi through USB (UART)
+#define MODE_MANUAL 1u  // Use the 2 trimpots to describe the motion
+//#define MODE_START  MODE_MANUAL // tells the program which mode should be enabled when starting
+#define MODE_START  MODE_AUTO // tells the program which mode should be enabled when starting
+
 
 // Trimpot pins
 const uint8_t PIN_TRMPT_FREQ    = A0; // Analog input 3.3V
@@ -75,7 +77,7 @@ void toggleSwitchModeISR()
      noInterrupts();
  unsigned long interrupt_time = millis();
  // If interrupts come faster than 200ms, assume it's a bounce and ignore
- if (interrupt_time - last_interrupt_time > 200) 
+ if (interrupt_time - last_interrupt_time > DEBOUNCE_TIME) 
  {
     flagMode = true; 
     //digitalWrite(LED_BUILTIN, digitalRead(BUTTON)); 
@@ -145,13 +147,19 @@ void setup()
       */
 
 //if (MODE_START == MODE_MANUAL)
-#ifdef USE_TC3
-    TimerTc3.initialize(10000);
-    TimerTc3.attachInterrupt(timerTrimpotISR);
-#else
-    TimerTcc0.initialize(10000); // 1e6 = 1s
-    TimerTcc0.attachInterrupt(timerTrimpotISR);
-#endif
+//
+//{
+//  #ifdef USE_TC3
+//      TimerTc3.initialize(10000);
+//      TimerTc3.attachInterrupt(timerTrimpotISR);
+//  #else
+//      TimerTcc0.initialize(10000); // 1e6 = 1s
+//      TimerTcc0.attachInterrupt(timerTrimpotISR);
+//  #endif
+//}
+
+// Enable the flag virtually, just once at the start as to read the location of the toggle switch
+flagMode = true;
 
 
 }
@@ -162,7 +170,7 @@ void loop()
 {  
     if (flagMode)
     {
-      flagMode = false;
+      flagMode = false; // Reset the flag immediatly
 
       // Since the toggle switch ISR is triggered on 
       //  change, read the final and debounced state
