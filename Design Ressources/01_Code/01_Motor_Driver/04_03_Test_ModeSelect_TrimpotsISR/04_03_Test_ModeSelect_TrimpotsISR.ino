@@ -76,15 +76,13 @@ void toggleSwitchModeISR()
 {
      noInterrupts();
  unsigned long interrupt_time = millis();
- // If interrupts come faster than 200ms, assume it's a bounce and ignore
+ // If interrupts come faster than LS_DEBOUNCE_TIME, assume it's a bounce and ignore
  if (interrupt_time - last_interrupt_time > DEBOUNCE_TIME) 
  {
     flagMode = true; 
     //digitalWrite(LED_BUILTIN, digitalRead(BUTTON)); 
  }
  last_interrupt_time = interrupt_time;
-//}
-     //delay(DEBOUNCE_TIME);
      interrupts();
 }
 
