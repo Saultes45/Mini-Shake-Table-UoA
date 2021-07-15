@@ -1,13 +1,13 @@
 /*
-  AnalogReadSerial
+AnalogReadSerial
 
-  Reads an analog input on pin 0, prints the result to the Serial Monitor.
-  Graphical representation is available using Serial Plotter (Tools > Serial Plotter menu).
-  Attach the center pin of a potentiometer to pin A0, and the outside pins to +5V and ground.
+Reads an analog input on pin 0, prints the result to the Serial Monitor.
+Graphical representation is available using Serial Plotter (Tools > Serial Plotter menu).
+Attach the center pin of a potentiometer to pin A0, and the outside pins to +5V and ground.
 
-  This example code is in the public domain.
+This example code is in the public domain.
 
-  https://www.arduino.cc/en/Tutorial/BuiltInExamples/AnalogReadSerial
+https://www.arduino.cc/en/Tutorial/BuiltInExamples/AnalogReadSerial
 */
 
 
@@ -36,50 +36,50 @@ const uint8_t PIN_TRMPT_FREQ    = A0; // Analog input 3.3V
 const uint8_t PIN_TRMPT_AMPL    = A1; // Analog input 3.3V
 
 
-void setup() 
+void setup()
 {
-  Serial.begin(CONSOLE_BAUD_RATE);
+	Serial.begin(CONSOLE_BAUD_RATE);
 }
 
 
-void loop() 
+void loop()
 {
-  // read the input on analog pin 0:
-  sensorValue1 = analogRead(PIN_TRMPT_FREQ);
-  if(sensorValue1 < sensorValue1_min)
-  {
-    sensorValue1_min = sensorValue1;
-  }
-  if(sensorValue1 > sensorValue1_max)
-  {
-    sensorValue1_max = sensorValue1;
-  }
-  // read the input on analog pin 1:
-  sensorValue2 = analogRead(PIN_TRMPT_AMPL);
-  if(sensorValue2 < sensorValue2_min)
-  {
-    sensorValue2_min = sensorValue2;
-  }
-  if(sensorValue2 > sensorValue2_max)
-  {
-    sensorValue2_max = sensorValue2;
-  }
+	// read the input on analog pin 0:
+	sensorValue1 = analogRead(PIN_TRMPT_FREQ);
+	if(sensorValue1 < sensorValue1_min)
+	{
+		sensorValue1_min = sensorValue1;
+	}
+	if(sensorValue1 > sensorValue1_max)
+	{
+		sensorValue1_max = sensorValue1;
+	}
+	// read the input on analog pin 1:
+	sensorValue2 = analogRead(PIN_TRMPT_AMPL);
+	if(sensorValue2 < sensorValue2_min)
+	{
+		sensorValue2_min = sensorValue2;
+	}
+	if(sensorValue2 > sensorValue2_max)
+	{
+		sensorValue2_max = sensorValue2;
+	}
 
 
-  // Raw values
-  Serial.print(sensorValue1);
-  Serial.print(" ");
-  Serial.print(sensorValue1_min);
-  Serial.print(" ");
-  Serial.print(sensorValue1_max);
-  Serial.print(" ");
-  Serial.print(sensorValue2);
-  Serial.print(" ");
-  Serial.print(sensorValue2_min);
-  Serial.print(" ");
-  Serial.println(sensorValue2_max);
-  
-  
-  
-  delay(10);        // delay in between reads for stability
+	// Raw values
+	Serial.print(sensorValue1);
+	Serial.print(" ");
+	Serial.print(sensorValue1_min);
+	Serial.print(" ");
+	Serial.print(sensorValue1_max);
+	Serial.print(" ");
+	Serial.print(sensorValue2);
+	Serial.print(" ");
+	Serial.print(sensorValue2_min);
+	Serial.print(" ");
+	Serial.println(sensorValue2_max);
+
+
+
+	delay(10);        // delay in between reads for stability
 }
