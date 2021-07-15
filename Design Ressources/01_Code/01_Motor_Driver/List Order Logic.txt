@@ -1,3 +1,5 @@
+File location: C:\Users\xcy\Desktop\Nathan\Mini-Shake-Table-UoA\Design Ressources\01_Code\01_Motor_Driver
+
 00 final version
 01 Overall logic and sequencing
 02 Limit switches

@@ -6,7 +6,7 @@
 *
 * Metadata
 * Written by    : Nathanaël Esnault
-* Verified by   : No one yet
+* Verified by   : Nathanaël Esnault
 * Creation date : 2021-07-15
 * Version       : 0.1 (finished on 2021-..-..)
 * Modifications :
