@@ -81,7 +81,7 @@ volatile bool stateLS_l = false; // this flag indicates if the LS is triggered t
 volatile unsigned long last_interrupt_time_ls_l = 0;
 
 // Mode toggle switch
-bool 					isLEDOn 			= false;
+bool 					          isLEDOn 			= false;
 volatile bool           flagMode            = false;
 volatile unsigned long  last_interrupt_time = 0;
 
@@ -101,16 +101,16 @@ float current_trimpotAmplitude_filtered = 0.0;
 // 0.97Hz/LSB
 float trimpot_frequency_range_max_lsb 	= XIAO_ADC_MAX_LSB; // in [LSB]
 float trimpot_frequency_range_min_lsb 	= 6.0;  			// in [LSB]
-float trimpot_frequency_max 			= 1000; 			// in [Hz]
-float trimpot_frequency_min 			= 0.0; 				// in [Hz]
+float trimpot_frequency_max 			      = 1000; 			// in [Hz]
+float trimpot_frequency_min 			      = 0.0; 				// in [Hz]
 // to use with stepper.setAcceleration
 
 // amplitude  (trimpot_amplitude_max - trimpot_amplitude_min) / 1024
 // 9.765625E-4 stepper shaft rotations/LSB
 float trimpot_amplitude_range_max_lsb 	= XIAO_ADC_MAX_LSB;  // in [LSB]
 float trimpot_amplitude_range_min_lsb 	= 6.0;   			 // in [LSB]
-float trimpot_amplitude_max 			= 0.5; 				 // in [stepper shaft rotations]
-float trimpot_amplitude_min 			= 0.0; 				 // in [stepper shaft rotations]
+float trimpot_amplitude_max 			      = 0.5; 				 // in [stepper shaft rotations]
+float trimpot_amplitude_min 			      = 0.0; 				 // in [stepper shaft rotations]
 // to use with : stepper.moveTo
 
 // -------------------------- ISR ----------------
