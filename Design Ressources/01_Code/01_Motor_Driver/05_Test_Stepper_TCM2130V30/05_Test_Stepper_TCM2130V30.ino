@@ -52,10 +52,16 @@ const uint16_t microSteppingFactorList[]    = {1, 4, 8, 16, 32, 64, 128, 256, 5,
 /* Says to this program which physical microSteppingFactor 
  *  is currently on the motor driver 
  */
-const uint8_t indx_microSteppingFactorList  = 0; 
-const uint8_t nativePulsesPerRevolution     = 200; // This parameter is from the motor and CANNOT be changed
-const uint8_t microstepsPerRevolution       = microSteppingFactorList[indx_microSteppingFactorList] * nativePulsesPerRevolution;
+const uint8_t indx_microSteppingFactorList  = 2; 
+//const uint8_t nativePulsesPerRevolution     = 200; // This parameter is from the motor and CANNOT be changed
+//const uint8_t microstepsPerRevolution       = microSteppingFactorList[indx_microSteppingFactorList] * nativePulsesPerRevolution;
 
+const int max_allowedMicroStepsPerSeconds           = 10000000;
+const int max_allowedMicroStepsPerSecondsPerSeconds = 50000000;
+const int actual_travelMicroStepsPerSeconds         =  1000000;
+
+const int nativePulsesPerRevolution     = 200; // This parameter is from the motor and CANNOT be changed
+const int microstepsPerRevolution       = microSteppingFactorList[indx_microSteppingFactorList] * nativePulsesPerRevolution;
 
 
 // -------------------------- Global variables ----------------
@@ -104,25 +110,25 @@ delay(5000);
   Serial.print("Current max speed is ");
   Serial.println(stepper.speed()); // Returns the most recent speed in steps per second
   Serial.print("Setting max speed to ");
-  Serial.println(50000 * microSteppingFactorList[indx_microSteppingFactorList]); // Returns the most recent speed in steps per second
-  stepper.setMaxSpeed(50000 * microSteppingFactorList[indx_microSteppingFactorList]);
+  Serial.println(max_allowedMicroStepsPerSeconds); // Returns the most recent speed in steps per second
+  stepper.setMaxSpeed(max_allowedMicroStepsPerSeconds);
   Serial.print("New max speed is ");
   Serial.println(stepper.speed()); // Returns the most recent speed in steps per second
 
   Serial.print("Setting acceleration to ");
-  Serial.println(10 * microSteppingFactorList[indx_microSteppingFactorList]);
-  stepper.setAcceleration(10 * microSteppingFactorList[indx_microSteppingFactorList]);
+  Serial.println(max_allowedMicroStepsPerSecondsPerSeconds);
+  stepper.setAcceleration(max_allowedMicroStepsPerSecondsPerSeconds); //50000000
   // No function to read back set acceleration
   // NOTICE: Calling setAcceleration() is expensive, since it requires a square root to be calculated.
 
-  Serial.print("Setting position to reach in [usteps] to ");
-  Serial.println(nbr_desiredRevolutions * microstepsPerRevolution);
-  stepper.moveTo(nbr_desiredRevolutions * microstepsPerRevolution);
-  Serial.print("New target position in [usteps] is ");
-  Serial.println(stepper.targetPosition ());// Returns (long) the most recent target position in steps. Positive is clockwise from the 0 position.
-
-  Serial.print("Current stepper position [usteps]: ");
-  Serial.println(stepper.currentPosition ()); // Returns (long) the current motor position in steps. Positive is clockwise from the 0 position.
+//  Serial.print("Setting position to reach in [usteps] to ");
+//  Serial.println(nbr_desiredRevolutions * microstepsPerRevolution);
+//  stepper.moveTo(nbr_desiredRevolutions * microstepsPerRevolution);
+//  Serial.print("New target position in [usteps] is ");
+//  Serial.println(stepper.targetPosition ());// Returns (long) the most recent target position in steps. Positive is clockwise from the 0 position.
+//
+//  Serial.print("Current stepper position [usteps]: ");
+//  Serial.println(stepper.currentPosition ()); // Returns (long) the current motor position in steps. Positive is clockwise from the 0 position.
 
   Serial.println("---------------------------------");
 
@@ -138,16 +144,34 @@ void loop()
 
   Serial.print("Current stepper position [usteps]: ");
   Serial.println(stepper.currentPosition ()); // Returns (long) the current motor position in steps. Positive is clockwise from the 0 position.
+  
+enableStepper(true);
+  
   stepper.moveTo(nbr_desiredRevolutions *  microstepsPerRevolution);
-  stepper.setSpeed(0.1 * microstepsPerRevolution);
-  enableStepper(true);
+  stepper.setSpeed(actual_travelMicroStepsPerSeconds);
+  
   
 
 while (stepper.distanceToGo() != 0)
 {
-  stepper.runSpeed();
+ //stepper.runSpeed();
+  stepper.run();
 //  Serial.print("Current stepper position [usteps]: ");
 //  Serial.println(stepper.currentPosition ()); // Returns (long) the current motor position in steps. Positive is clockwise from the 0 position.
+}
+
+  delay(2000);
+
+  stepper.moveTo(-nbr_desiredRevolutions *  microstepsPerRevolution);
+  stepper.setSpeed(-actual_travelMicroStepsPerSeconds);
+
+
+while (stepper.distanceToGo() != 0) // Returns the distance from the current position to the target position in steps. Positive is clockwise from the current position.
+{
+  //stepper.runSpeed();
+  stepper.run();
+  //Serial.print("Current stepper position [usteps]: ");
+  //Serial.println(stepper.currentPosition ()); // Returns (long) the current motor position in steps. Positive is clockwise from the 0 position.
 }
 
  Serial.println("We arrived at the end of the movement");
@@ -155,27 +179,9 @@ while (stepper.distanceToGo() != 0)
  Serial.print("Current stepper position [usteps]: ");
  Serial.println(stepper.currentPosition ()); // Returns (long) the current motor position in steps. Positive is clockwise from the 0 position.
  enableStepper(false);
-
-
-  stepper.moveTo(-nbr_desiredRevolutions *  microstepsPerRevolution);
-  stepper.setSpeed(0.1 * microstepsPerRevolution);
-enableStepper(true);
-  
-
-while (stepper.distanceToGo() != 0) // Returns the distance from the current position to the target position in steps. Positive is clockwise from the current position.
-{
-  stepper.runSpeed();
-  //Serial.print("Current stepper position [usteps]: ");
-  //Serial.println(stepper.currentPosition ()); // Returns (long) the current motor position in steps. Positive is clockwise from the 0 position.
-}
-
-  Serial.println("We arrived at the end of the movement");
-
- Serial.print("Current stepper position [usteps]: ");
- Serial.println(stepper.currentPosition ()); // Returns (long) the current motor position in steps. Positive is clockwise from the 0 position.
- enableStepper(false);
  
 
+delay(2000);
   
 
 }// END OF LOOP
@@ -192,16 +198,16 @@ void enableStepper(bool enableOrder)
   {
     Serial.println("User asked to ENABLE the stepper, be careful");
     Serial.print("Changing...");
-    //digitalWrite(PIN_MOTOR_ENA,LOW); // Inverse logic (active low)
-    digitalWrite(PIN_MOTOR_ENA,HIGH); // Normal logic (active high)
+    digitalWrite(PIN_MOTOR_ENA,LOW); // Inverse logic (active low)
+//    digitalWrite(PIN_MOTOR_ENA,HIGH); // Normal logic (active high)
     
   }
   else
   {
     Serial.println("User asked to DISABLE the stepper");
     Serial.print("Changing...");
-    //digitalWrite(PIN_MOTOR_ENA,HIGH); // Inverse logic (active low)
-    digitalWrite(PIN_MOTOR_ENA,LOW); // Normal logic (active high)
+    digitalWrite(PIN_MOTOR_ENA,HIGH); // Inverse logic (active low)
+//    digitalWrite(PIN_MOTOR_ENA,LOW); // Normal logic (active high)
   }
   Serial.println("Done");
   
