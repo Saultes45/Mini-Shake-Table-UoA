@@ -154,7 +154,7 @@ enableStepper(true);
 
 while (stepper.distanceToGo() != 0)
 {
- //stepper.runSpeed();
+// stepper.runSpeed();
   stepper.run();
 //  Serial.print("Current stepper position [usteps]: ");
 //  Serial.println(stepper.currentPosition ()); // Returns (long) the current motor position in steps. Positive is clockwise from the 0 position.
@@ -162,13 +162,14 @@ while (stepper.distanceToGo() != 0)
 
   delay(2000);
 
+
   stepper.moveTo(-nbr_desiredRevolutions *  microstepsPerRevolution);
-  stepper.setSpeed(-actual_travelMicroStepsPerSeconds);
+  
 
 
 while (stepper.distanceToGo() != 0) // Returns the distance from the current position to the target position in steps. Positive is clockwise from the current position.
 {
-  //stepper.runSpeed();
+//  stepper.runSpeed();
   stepper.run();
   //Serial.print("Current stepper position [usteps]: ");
   //Serial.println(stepper.currentPosition ()); // Returns (long) the current motor position in steps. Positive is clockwise from the 0 position.
