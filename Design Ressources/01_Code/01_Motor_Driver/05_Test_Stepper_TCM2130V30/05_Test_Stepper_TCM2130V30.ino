@@ -52,13 +52,13 @@ const uint16_t microSteppingFactorList[]    = {1, 4, 8, 16, 32, 64, 128, 256, 5,
 /* Says to this program which physical microSteppingFactor 
  *  is currently on the motor driver 
  */
-const uint8_t indx_microSteppingFactorList  = 2; 
+const uint8_t indx_microSteppingFactorList  = 1; 
 //const uint8_t nativePulsesPerRevolution     = 200; // This parameter is from the motor and CANNOT be changed
 //const uint8_t microstepsPerRevolution       = microSteppingFactorList[indx_microSteppingFactorList] * nativePulsesPerRevolution;
 
 const int max_allowedMicroStepsPerSeconds           = 10000000;
-const int max_allowedMicroStepsPerSecondsPerSeconds = 50000000;
-const int actual_travelMicroStepsPerSeconds         =  1000000;
+const int max_allowedMicroStepsPerSecondsPerSeconds = 750; //4100
+const int actual_travelMicroStepsPerSeconds         =  1000; //1000
 
 const int nativePulsesPerRevolution     = 200; // This parameter is from the motor and CANNOT be changed
 const int microstepsPerRevolution       = microSteppingFactorList[indx_microSteppingFactorList] * nativePulsesPerRevolution;
@@ -74,7 +74,7 @@ AccelStepper stepper(AccelStepper::DRIVER, PIN_MOTOR_STEP, PIN_MOTOR_DIR);
 
 // Stepper motor movement planning
 //--------------------------------
-uint16_t nbr_desiredRevolutions = 1;
+uint16_t nbr_desiredRevolutions = 10;
 
 // -------------------------- Functions declaration --------------------------
 void enableStepper(bool enableOrder);
@@ -179,7 +179,7 @@ while (stepper.distanceToGo() != 0) // Returns the distance from the current pos
 
  Serial.print("Current stepper position [usteps]: ");
  Serial.println(stepper.currentPosition ()); // Returns (long) the current motor position in steps. Positive is clockwise from the 0 position.
- enableStepper(false);
+ //enableStepper(false);
  
 
 delay(2000);
