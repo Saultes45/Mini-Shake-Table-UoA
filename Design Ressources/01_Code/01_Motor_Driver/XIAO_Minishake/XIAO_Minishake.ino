@@ -39,9 +39,9 @@
 #include <AccelStepper.h>
 
 // Stepper motor driver pins
-const uint8_t PIN_MOTOR_STEP   = 2; // Digital output 3.3V
+const uint8_t PIN_MOTOR_STEP   = 4; // Digital output 3.3V
 const uint8_t PIN_MOTOR_DIR    = 3; // Digital output 3.3V
-const uint8_t PIN_MOTOR_ENA    = 4; // Digital output 3.3V, manual logic
+const uint8_t PIN_MOTOR_ENA    = 5; // Digital output 3.3V, manual logic
 
 
 const uint8_t stepFactor = 200;
