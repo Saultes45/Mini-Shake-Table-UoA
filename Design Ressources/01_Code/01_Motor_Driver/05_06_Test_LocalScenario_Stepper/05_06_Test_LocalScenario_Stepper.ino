@@ -48,33 +48,33 @@ const uint8_t PIN_MOTOR_ENA    = 5; // Digital output 3.3V, manual logic
  * Handled exclusively by the motor driver - I know, it 
  * is NOT sorted ascendedly but what can I do?
  */
-const uint16_t microSteppingFactorList[]    = {1, 4, 8, 16, 32, 64, 128, 256, 5, 10, 20, 25, 40, 50, 100, 200}; 
+const long microSteppingFactorList[]    = {1, 4, 8, 16, 32, 64, 128, 256, 5, 10, 20, 25, 40, 50, 100, 200}; 
 /* Says to this program which physical microSteppingFactor 
  *  is currently on the motor driver 
  */
-const uint8_t indx_microSteppingFactorList  = 1; 
+const uint8_t indx_microSteppingFactorList  = 0; 
 //const uint8_t nativePulsesPerRevolution     = 200; // This parameter is from the motor and CANNOT be changed
 //const uint8_t microstepsPerRevolution       = microSteppingFactorList[indx_microSteppingFactorList] * nativePulsesPerRevolution;
 
-const int max_allowedMicroStepsPerSeconds           = 10000000;
-const int max_allowedMicroStepsPerSecondsPerSeconds = 750; //4100
-const int actual_travelMicroStepsPerSeconds         =  1000; //1000
+const float max_allowedMicroStepsPerSeconds           = 10000.0;//500.0 * 200.0; //10000.0; //10000000
+const float max_allowedMicroStepsPerSecondsPerSeconds = 14000.0;//200.0 * 200.0;//750.0; // //750
+//const int actual_travelMicroStepsPerSeconds         =  1000; //1000
 
-const int nativePulsesPerRevolution     = 200; // This parameter is from the motor and CANNOT be changed
-const int microstepsPerRevolution       = microSteppingFactorList[indx_microSteppingFactorList] * nativePulsesPerRevolution;
+const long nativePulsesPerRevolution     = ((long)200); // This parameter is from the motor and CANNOT be changed
+const long microstepsPerRevolution       = microSteppingFactorList[indx_microSteppingFactorList] * nativePulsesPerRevolution;
 
 // Local Scenario
-const int nbr_movementsScenario = 5;
-int scenarioSteps[nbr_movementsScenario] = {0};
-int scenarioSpeed[nbr_movementsScenario] = {0};
+const int nbr_movementsScenario = 10;
+long scenarioSteps[nbr_movementsScenario] = {0};
+float scenarioSpeed[nbr_movementsScenario] = {0.0};
 
 
  
 // -------------------------- Global variables ----------------
 
-// Stepper motor movement planning
-//--------------------------------
-uint16_t nbr_desiredRevolutions = 10;
+//// Stepper motor movement planning
+////--------------------------------
+//uint16_t nbr_desiredRevolutions = 10;
 
 // Define a stepper and the pins it will use
 // Precise that we use a dedicated stepper driver, thus we have 2 pins: STEP and DIR (ENA is handled manually)
@@ -88,17 +88,34 @@ void enableStepper(bool enableOrder);
 void setup() 
 {
 
- scenarioSteps[0] = 1 * microstepsPerRevolution;
- scenarioSteps[1] = 5 * microstepsPerRevolution;
- scenarioSteps[2] = 2 * microstepsPerRevolution;
- scenarioSteps[3] = 1 * microstepsPerRevolution;
- scenarioSteps[4] = 2 * microstepsPerRevolution;
+// scenarioSteps[0] = (+1 * microstepsPerRevolution); // the first one is always 1/2, I don't know why
+// scenarioSteps[1] = -1 * microstepsPerRevolution;
+// scenarioSteps[2] = +1 * microstepsPerRevolution;
+// scenarioSteps[3] = -1 * microstepsPerRevolution;
+// scenarioSteps[4] = +1 * microstepsPerRevolution;
 
- scenarioSpeed[0] = 200;
- scenarioSpeed[1] = 500;
- scenarioSpeed[2] = 1000;
- scenarioSpeed[3] = 100;
- scenarioSpeed[4] = 100;
+ scenarioSteps[0] = +200; // the first one is always 1/2, I don't know why
+ scenarioSteps[1] = -200;
+ scenarioSteps[2] = +200;
+ scenarioSteps[3] = -100;
+ scenarioSteps[4] = +100;
+ scenarioSteps[5] = +50;
+ scenarioSteps[6] = -25;
+ scenarioSteps[7] = +25;
+ scenarioSteps[8] = -400;
+ scenarioSteps[9] = +400;
+
+
+ scenarioSpeed[0] = +250.0;
+ scenarioSpeed[1] = -10000.0;
+ scenarioSpeed[2] = +10000.0;
+ scenarioSpeed[3] = -10000.0;
+ scenarioSpeed[4] = +10000.0;
+ scenarioSpeed[5] = +10000.0;
+ scenarioSpeed[6] = -10000.0;
+ scenarioSpeed[7] = +10000.0;
+ scenarioSpeed[8] = -10000.0;
+ scenarioSpeed[9] = +25.0;
 
 
 delay(5000);
@@ -149,6 +166,36 @@ delay(5000);
 
   Serial.println("---------------------------------");
 
+  enableStepper(true);
+  delay(1000);
+
+// Dry run
+
+//  stepper.setMaxSpeed(50000 * 200);
+//  stepper.setAcceleration(10000 * 200);
+//  stepper.moveTo(1 * 200);
+//
+//    while (stepper.distanceToGo() != 0)
+//  {
+//    stepper.run();
+//  }
+//
+//
+//
+//  stepper.setAcceleration(max_allowedMicroStepsPerSecondsPerSeconds);
+  
+for (int cnt_scenarioMovements = 0 ; cnt_scenarioMovements < nbr_movementsScenario; cnt_scenarioMovements++)
+{
+  
+  stepper.setSpeed(scenarioSpeed[cnt_scenarioMovements]);
+  stepper.moveTo(scenarioSteps[cnt_scenarioMovements]);
+  while (stepper.distanceToGo() != 0)
+  {
+    stepper.run();
+  }
+}
+enableStepper(false);
+
 }// END OF SETUP
 
 
@@ -157,64 +204,7 @@ delay(5000);
 void loop() 
 {
 
-enableStepper(true);
-for (int cnt_scenarioMovements = 0 ; cnt_scenarioMovements < nbr_movementsScenario; cnt_scenarioMovements++)
-{
-  stepper.moveTo(scenarioSteps[cnt_scenarioMovements]);
-  stepper.setSpeed(scenarioSpeed[cnt_scenarioMovements]);
-  while (stepper.distanceToGo() != 0)
-  {
-    stepper.run();
-  }
-}
-enableStepper(false);
-
-
-
-// runSpeed() is capable of running faster than  run();
-
-  Serial.print("Current stepper position [usteps]: ");
-  Serial.println(stepper.currentPosition ()); // Returns (long) the current motor position in steps. Positive is clockwise from the 0 position.
-  enableStepper(true);
-  
-stepper.moveTo(nbr_desiredRevolutions *  microstepsPerRevolution);
-stepper.setSpeed(actual_travelMicroStepsPerSeconds);
-while (stepper.distanceToGo() != 0)
-{
-// stepper.runSpeed();
-  stepper.run();
-//  Serial.print("Current stepper position [usteps]: ");
-//  Serial.println(stepper.currentPosition ()); // Returns (long) the current motor position in steps. Positive is clockwise from the 0 position.
-}
-
-  //delay(2000);
-
-stepper.moveTo(-nbr_desiredRevolutions *  microstepsPerRevolution);
-while (stepper.distanceToGo() != 0) // Returns the distance from the current position to the target position in steps. Positive is clockwise from the current position.
-{
-//  stepper.runSpeed();
-  stepper.run();
-  //Serial.print("Current stepper position [usteps]: ");
-  //Serial.println(stepper.currentPosition ()); // Returns (long) the current motor position in steps. Positive is clockwise from the 0 position.
-}
-
-stepper.moveTo(nbr_desiredRevolutions *  microstepsPerRevolution);
-while (stepper.distanceToGo() != 0) // Returns the distance from the current position to the target position in steps. Positive is clockwise from the current position.
-{
-//  stepper.runSpeed();
-  stepper.run();
-  //Serial.print("Current stepper position [usteps]: ");
-  //Serial.println(stepper.currentPosition ()); // Returns (long) the current motor position in steps. Positive is clockwise from the 0 position.
-}
-
- Serial.println("We arrived at the end of the movement");
-
- Serial.print("Current stepper position [usteps]: ");
- Serial.println(stepper.currentPosition ()); // Returns (long) the current motor position in steps. Positive is clockwise from the 0 position.
- //enableStepper(false);
- 
-
-delay(2000);
+delay(10000);
   
 
 }// END OF LOOP
