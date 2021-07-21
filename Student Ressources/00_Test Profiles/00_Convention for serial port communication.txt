@@ -1,0 +1,18 @@
+ SOM (start of message) $
+ EOM (end of message) \r\n
+ No checksum
+ 
+ Start scenario
+ $S\r\n
+ 
+ Clear received scenario data
+ $C\r\n
+ 
+ Add a scenario entry to the scenario table
+ $A,Time to target in ms, Position in mm\r\n
+ 
+ Get the current scenario step index/counter
+ $I\r\n
+ 
+ Get max storable scenario step index/counter
+ $M\r\n
