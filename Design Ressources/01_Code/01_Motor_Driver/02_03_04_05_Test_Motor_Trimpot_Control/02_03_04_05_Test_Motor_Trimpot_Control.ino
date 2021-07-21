@@ -50,6 +50,7 @@
 // General
 #define SERIAL_VERBOSE
 #define CONSOLE_BAUD_RATE             115200  // Baudrate in [bauds] for serial communication to the console
+//#define SHOW_TRIMPOT_VALUE
 
 // Stepper motor driver pins (logic low)
 //--------------------------------------
@@ -68,12 +69,12 @@ const long microSteppingFactorList[]                  = {1, 4, 8, 16, 32, 64, 12
  * is currently on the motor driver 
  */
 const uint8_t indx_microSteppingFactorList              = 0; 
-const float   max_allowedMicroStepsPerSeconds           = 10000.0;//500.0 * 200.0; //10000.0; //10000000
-const float   max_allowedMicroStepsPerSecondsPerSeconds = 14000.0;//200.0 * 200.0;//750.0; // //750
+const float   max_allowedMicroStepsPerSeconds           = 900.0;//500.0 * 200.0; //10000.0; //10000000
+const float   max_allowedMicroStepsPerSecondsPerSeconds = 2000;//1400.0;//200.0 * 200.0;//750.0; // //750
 const long    nativePulsesPerRevolution                 = ((long)200); // This parameter is from the motor and CANNOT be changed
 const long    microstepsPerRevolution                   = microSteppingFactorList[indx_microSteppingFactorList] * nativePulsesPerRevolution;
-const float   centeringSpeedMicroStepsPerSecondsPerSeconds = 700.0;
-const float   centeringSpeedMicroStepsPerSeconds           = 500.0;
+const float   centeringSpeedMicroStepsPerSecondsPerSeconds = 500.0;
+const float   centeringSpeedMicroStepsPerSeconds           = 1.0;
 
 
 
@@ -130,19 +131,19 @@ volatile unsigned long  last_interrupt_time = 0;
 uint16_t median1          = 0;
 uint16_t sensorValue1     = 0;
 MedianFilter2<int> medianFilter1(NBR_SAMPLES_MEDIAN);
-float current_trimpotFrequency_filtered = 0.0;
+volatile float current_trimpotFrequency_filtered = 0.0;
 
 // Trimpot: Amplitude
 uint16_t median2        = 0;
 uint16_t sensorValue2   = 0;
 MedianFilter2<int> medianFilter2(NBR_SAMPLES_MEDIAN);
-float current_trimpotAmplitude_filtered = 0.0;
+volatile float current_trimpotAmplitude_filtered = 0.0;
 
 // precision  (trimpot_frequency_max - trimpot_frequency_min) / 1024
 // 0.97Hz/LSB
 float trimpot_frequency_range_max_lsb   = XIAO_ADC_MAX_LSB; // in [LSB]
 float trimpot_frequency_range_min_lsb   = 6.0;        // in [LSB]
-float trimpot_frequency_max             = 1000;       // in [Hz]
+float trimpot_frequency_max             = 1.0;       // in [Hz]
 float trimpot_frequency_min             = 0.0;        // in [Hz]
 // to use with stepper.setAcceleration
 
@@ -150,9 +151,11 @@ float trimpot_frequency_min             = 0.0;        // in [Hz]
 // 9.765625E-4 stepper shaft rotations/LSB
 float trimpot_amplitude_range_max_lsb   = XIAO_ADC_MAX_LSB;  // in [LSB]
 float trimpot_amplitude_range_min_lsb   = 6.0;         // in [LSB]
-float trimpot_amplitude_max             = 0.5;         // in [stepper shaft rotations]
-float trimpot_amplitude_min             = 0.0;         // in [stepper shaft rotations]
+float trimpot_amplitude_max             = 200.0;         // in [mm]
+float trimpot_amplitude_min             = 0.0;         // in [mm]
 // to use with : stepper.moveTo
+
+//long manualOrder_Direction = -1; // should only be +1 (right) or -1 (left) <DEBUG> <NOT USED>
 
 
 // Stepper motor driver 
@@ -166,14 +169,15 @@ AccelStepper stepper(AccelStepper::DRIVER, PIN_MOTOR_STEP, PIN_MOTOR_DIR);
 
 // Stepper calibration
 //---------------------
-float ustepsPerMM_calib       = 14;        // <DEBUG> This parameter holds the calibration parameter
+float ustepsPerMM_calib       = 0.0;        // This parameter holds the calibration parameter
 float distanceBetweenLS_MM    = 500.0;     // For stepper calibration
 long distanceBetweenLS_uSteps = 0;          // For stepper calibration
 //bool abortCalibration         = true;       // A variable that tells if we need to stop the calibration
 bool calibrationSuccess       = false;      // A variable that tells if the calibration was sucessful
 
 bool needCalibration          = true;       // Indicates if there is a current good distance calibration done
-bool abortMovement         = true;       // A (unified) variable that tells if we need to stop the centering/calibration/scenario
+bool abortMovement            = true;       // A (unified) variable that tells if we need to stop the centering/calibration/scenario
+bool executingCalib           = false;      // Indicates if we are currently in distance calibration with the Limit Switches
 
 // Local Scenario (not needed here but for compatibility)
 //----------------
@@ -206,7 +210,7 @@ void LW_r_ISR()
     digitalWrite(LED_BUILTIN, digitalRead(PIN_LIMIT_RIGHT));
     if(digitalRead(PIN_LIMIT_RIGHT))
     {
-      enableStepper (false);
+      enableStepper (executingCalib); // disable the stepper only if NOT in calibration
       enableTrimpots(false);
       abortMovement = true;
       stateLS_r = true;
@@ -236,7 +240,7 @@ void LW_l_ISR()
     digitalWrite(LED_BUILTIN, digitalRead(PIN_LIMIT_LEFT));
     if(digitalRead(PIN_LIMIT_LEFT))
     {
-      enableStepper (false);
+      enableStepper (executingCalib); // disable the stepper only if NOT in calibration
       enableTrimpots(false);
       abortMovement = true;
       stateLS_l = true;
@@ -344,7 +348,7 @@ if (digitalRead(PIN_TOGGLE_MODE) == MODE_MANUAL)
 
   // Display (for  <DEBUG> only)
   //----------------------------
-
+  #ifdef SHOW_TRIMPOT_VALUE
   // Raw values
   //  Serial.print(sensorValue1);
   //  Serial.print(" ");
@@ -353,12 +357,11 @@ if (digitalRead(PIN_TOGGLE_MODE) == MODE_MANUAL)
   //  Serial.print(sensorValue2);
   //  Serial.print(" ");
   //  Serial.println(median2);
-
-  // Prints
-
+  // Final values
   Serial.print  (current_trimpotFrequency_filtered);
   Serial.print(" ");
   Serial.println(current_trimpotAmplitude_filtered);
+  #endif
 
 }
 
@@ -422,7 +425,6 @@ void setup()
      void displayStepperSettings(void);
      Serial.println("---------------------------------"); // Indicates the end of the setup
      enableTrimpots(digitalRead(PIN_TOGGLE_MODE)); 
-
   }
   
 
@@ -477,9 +479,53 @@ void loop()
 //  }// if (flagMode)
 
 
-  // if ther are no errors then we can continue
-  if (abortMovement == false)
+  // if therw are no errors then we can continue and do the movement. This is a BLOCKING call
+  if ( abortMovement == false && (digitalRead(PIN_TOGGLE_MODE) == MODE_MANUAL) )
   {
+   Serial.printf("Current mode: %d | %d\r\n", digitalRead(PIN_TOGGLE_MODE), MODE_MANUAL); 
+    
+    long halfAmplitudeMicroSteps = (long)(0.5 * (current_trimpotAmplitude_filtered * ustepsPerMM_calib)); 
+    float manual_MicroStepsPerSecondsPerSeconds = halfAmplitudeMicroSteps * current_trimpotFrequency_filtered;
+
+    if ( (halfAmplitudeMicroSteps > 0.0) && (manual_MicroStepsPerSecondsPerSeconds > 0.0) )
+    {
+    Serial.printf("Current trimpot values: %f | %f\r\n", current_trimpotAmplitude_filtered, current_trimpotFrequency_filtered);
+    Serial.printf("Current user manual settings: %lu | %f\r\n", halfAmplitudeMicroSteps, manual_MicroStepsPerSecondsPerSeconds);
+
+    
+    // apply to the motor
+
+    stepper.setSpeed(manual_MicroStepsPerSecondsPerSeconds); // Order matters!!!! 1-> max speed (needed for accel) 2->accel 3->target pos (steps)
+    stepper.setAcceleration(max_allowedMicroStepsPerSecondsPerSeconds);
+
+    // 1st movement -1/2
+    //-------------------
+    stepper.moveTo( (long)(+1 * halfAmplitudeMicroSteps) );
+    while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+    {
+      stepper.run();
+    }
+
+    // 2nd movement +1 
+    //-------------------
+//    stepper.moveTo( (long)(+2 * halfAmplitudeMicroSteps) );
+//    while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+//    {
+//      stepper.run();
+//    }
+     
+
+   // 3rd movement -1/2
+   //-------------------
+    stepper.moveTo( (long)(+1 * halfAmplitudeMicroSteps) );
+    while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+    {
+      stepper.run();
+    }
+
+    // Here we should be where we started: at the center, ready to start an oscillation again
+
+    }
     
   }
 
@@ -487,7 +533,7 @@ void loop()
 
 
 /*------------------------------------------------------*/
-/*-------------------- Functions [?] -------------------*/
+/*-------------------- Functions [7] -------------------*/
 /*------------------------------------------------------*/
 
 //******************************************************************************************
@@ -665,6 +711,16 @@ void  moveTableToCenter   (void)
     stepper.run();
   }
 
+  /* Parameters:  position (long) The position in steps of wherever the 
+   *  motor happens to be right now 
+  *  Resets the current position of the motor, so that 
+  *  wherever the motor happens to be right now is considered 
+  *  to be the new 0 position. Useful for setting a zero position 
+  *  on a stepper after an initial hardware positioning move. Has 
+  *  the side effect of setting the current motor speed to 0.
+  */
+
+   stepper.setCurrentPosition(0);
 
   #ifdef SERIAL_VERBOSE
   Serial.println("done");
@@ -683,7 +739,19 @@ void  calibrateStepper (void) // <TODO> This is currently a placeholder, use the
 
   // (Re)setting some variables 
   // <DEBUG>
-  calibrationSuccess       = true;      // A variable that tells if the calibration was sucessful
+  // This is the START position, get the table (motor) position and save it 
+    distanceBetweenLS_uSteps = 500; //stepper.currentPosition(); // This is also a distance since we marked the 0 as the right-most 
+    
+    //* Calculate how many steps have been executed to travel the USER-DEFINED distance between the 2 LS
+
+    ustepsPerMM_calib = distanceBetweenLS_uSteps / distanceBetweenLS_MM;
+
+    Serial.println("Calibration success!");
+    Serial.printf("The calibrated step distance bewteen the 2 limit switches is %ld \r\n", distanceBetweenLS_uSteps);
+    Serial.printf("The user-defined distance bewteen the 2 limit switches is %f [mm] \r\n", distanceBetweenLS_MM);
+    Serial.printf("The calibration ratio is: %f [mm/steps]\r\n", ustepsPerMM_calib);
+    
+    calibrationSuccess = true;
   
 
   if(calibrationSuccess)
