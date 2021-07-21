@@ -313,17 +313,12 @@ void loop()
         // Then everything went according to the plan, no timeout
         
         /* Parameters:  position (long) The position in steps of wherever the 
+         *  motor happens to be right now 
         *  Resets the current position of the motor, so that 
         *  wherever the motor happens to be right now is considered 
         *  to be the new 0 position. Useful for setting a zero position 
         *  on a stepper after an initial hardware positioning move. Has 
         *  the side effect of setting the current motor speed to 0.
-        *  motor happens to be right now 
-        */
-
-        /* Parameters:  Returns 
-        * the current motor position (long) in steps. Positive is
-        * clockwise from the 0 position.
         */
 
         stepper.setCurrentPosition(0);
