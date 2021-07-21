@@ -39,6 +39,8 @@
 #include <TimerTCC0.h>
 #endif
 
+#include "StepperCalibration.h" // Personal library
+
 // Trimpots filtering
 #include "MedianFilterLib2.h"
 
@@ -48,9 +50,9 @@
 // -------------------------- Defines --------------------------
 
 // General
-#define SERIAL_VERBOSE
+#define SERIAL_VERBOSE                        // uncomment to see more debug messages 
 #define CONSOLE_BAUD_RATE             115200  // Baudrate in [bauds] for serial communication to the console
-//#define SHOW_TRIMPOT_VALUE
+//#define SHOW_TRIMPOT_VALUE                  // uncomment to see the calculated frequency and amplitude values in the ISR
 
 // Stepper motor driver pins (logic low)
 //--------------------------------------
@@ -155,8 +157,6 @@ float trimpot_amplitude_max             = 200.0;         // in [mm]
 float trimpot_amplitude_min             = 0.0;         // in [mm]
 // to use with : stepper.moveTo
 
-//long manualOrder_Direction = -1; // should only be +1 (right) or -1 (left) <DEBUG> <NOT USED>
-
 
 // Stepper motor driver 
 //----------------------
@@ -169,21 +169,7 @@ AccelStepper stepper(AccelStepper::DRIVER, PIN_MOTOR_STEP, PIN_MOTOR_DIR);
 
 // Stepper calibration
 //---------------------
-float ustepsPerMM_calib       = 0.0;        // This parameter holds the calibration parameter
-float distanceBetweenLS_MM    = 500.0;     // For stepper calibration
-long distanceBetweenLS_uSteps = 0;          // For stepper calibration
-//bool abortCalibration         = true;       // A variable that tells if we need to stop the calibration
-bool calibrationSuccess       = false;      // A variable that tells if the calibration was sucessful
-
-bool needCalibration          = true;       // Indicates if there is a current good distance calibration done
-bool abortMovement            = true;       // A (unified) variable that tells if we need to stop the centering/calibration/scenario
-bool executingCalib           = false;      // Indicates if we are currently in distance calibration with the Limit Switches
-
-// Local Scenario (not needed here but for compatibility)
-//----------------
-      //bool  abortScenario                         = false; // a variable that store potential reason to stop a scenario
-
-
+// moved in in "StepperCalibration.h"
 
 // -------------------------- Functions declaration [7] --------------------------
 void      pinSetUp            (void);
