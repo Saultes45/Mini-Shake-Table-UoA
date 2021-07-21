@@ -1,0 +1,32 @@
+From: https://www.raspberrypi.org/documentation/configuration/uart.md
+
+
+Pi 4 and 400 - six UARTS
+The Raspberry Pi 4B and 400 have four additional PL011s, which are disabled by default:
+
+Name	Type
+UART0	PL011
+UART1	mini UART
+UART2	PL011
+UART3	PL011
+UART4	PL011
+UART5	PL011
+
+
+Linux devices on Raspberry Pi OS:
+
+Linux device	Description
+/dev/ttyS0	mini UART
+/dev/ttyAMA0	first PL011 (UART0)
+/dev/serial0	primary UART
+/dev/serial1	secondary UART
+Note: /dev/serial0 and /dev/serial1 are symbolic links which point to either /dev/ttyS0 or /dev/ttyAMA0.
+
+
+Probably /dev/ttyAMA0 (or use the symbolic link to it: /dev/serial0)
+
+Use the serial library: import serial
+
+# https://stackoverflow.com/questions/25662489/how-to-write-on-serial-port-in-python-that-ttyusb0-will-be-interpreted-commands#
+#   http://www.roman10.net/serial-port-communication-in-python/
+#   http://www.brettdangerfield.com/post/raspberrypi_tempature_monitor_project/
