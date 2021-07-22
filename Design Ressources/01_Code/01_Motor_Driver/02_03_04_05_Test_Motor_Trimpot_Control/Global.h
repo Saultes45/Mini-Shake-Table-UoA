@@ -56,6 +56,11 @@ const uint16_t MS_DEBOUNCE_TIME         = 50;      // millisecond button debounc
 #define MODE_MANUAL 1u  // Use the 2 trimpots to execute the motion
 
 
+// Mode toggle switch
+//-------------------
+volatile bool           flagMode            = false;
+volatile unsigned long  last_interrupt_time = 0;
+
 
 // -------------------------- Global variables ----------------
 
