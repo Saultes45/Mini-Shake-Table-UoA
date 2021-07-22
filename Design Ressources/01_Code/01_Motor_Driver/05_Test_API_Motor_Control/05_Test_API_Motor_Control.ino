@@ -34,7 +34,7 @@
 
 #include "Global.h"
 
-
+//#include <math.h>  signum
 
 
 // -------------------------- Defines --------------------------
@@ -151,58 +151,114 @@ void setup()
 void loop()
 {
 
+//**********************************************************************
   // Do a constant speed movement + and then -
   
-//  stepper.moveTo( (long)(+1 * 200) );
-//  
-//  stepper.setSpeed(1225.0);
-//  printStepperState();
-//  while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
-//  //while ( (stepper.isRunning()) && (abortMovement == false) )
-//	{
-//		stepper.runSpeed();
-//	}
-// //stepper.stop();
-//
-//  printStepperState();
-//  delay(3000);
-//  
-//  
-//  stepper.moveTo( (long)(-1 * 200) );
-//  stepper.setSpeed(-1225.0);
-//  printStepperState();
-//  while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
-//	{
-//		stepper.runSpeed();
-//	}
+  stepper.moveTo( (long)(+1 * 200) );
+  
+  stepper.setSpeed(1225.0);
+  printStepperState();
+  while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+  //while ( (stepper.isRunning()) && (abortMovement == false) )
+	{
+		stepper.runSpeed();
+	}
+ //stepper.stop();
+
+  //printStepperState();
+  delay(1000);
+  
+  
+  stepper.moveTo( (long)(-1 * 200) );
+  stepper.setSpeed(-1225.0);
+  printStepperState();
+  while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+	{
+		stepper.runSpeed();
+	}
 
 
+  delay(1000);
+  stepper.moveTo( (long)(0) );
+  Serial.print("Distance to go: ");
+  Serial.println(stepper.distanceToGo());
+  Serial.print("Sign of DTG ");
+  Serial.println((stepper.distanceToGo()>0));
+  Serial.print("Speed ");
+  Serial.println(((stepper.distanceToGo() > 0) ? +1.0 : -1.0));
+  Serial.print("Speed ");
+  Serial.println( ((stepper.distanceToGo() > 0) ? +1.0 : -1.0)  * 1225.0 );
+  
+  stepper.setSpeed( ((stepper.distanceToGo() > 0) ? +1.0 : -1.0)  * 500.0  );
+  while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+  {
+    stepper.runSpeed();
+  }
 
-//  // Do an acceleration movement + and then -
-//  stepper.moveTo( (long)(+1 * 200*2*10) );
-//  stepper.setAcceleration(84000.0 * 3.5); // reach max speed in 5.0s
-//  
-//	while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
-//	{
-//		stepper.run();
-//	}
-//
-//  delay(500);
-//
-//  stepper.moveTo( (long)(-1 * 200*2*10) );
-//  stepper.setAcceleration(84000.0 * 3.5); // reach max speed in 5.0s
-//  
-//	while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
-//	{
-//		stepper.run();
-//	}
-//
-//  delay(500);
-//
-//  //printStepperState();
+delay(3000);
+
+//**********************************************************************
+  // Do an acceleration movement + and then -
+  stepper.moveTo( (long)(+1 * 200*2*10) );
+  stepper.setAcceleration(84000.0 * 3.5); // reach max speed in 5.0s
+  
+	while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+	{
+		stepper.run();
+	}
+
+  delay(500);
+
+  stepper.moveTo( (long)(-1 * 200*2*10) );
+  stepper.setAcceleration(84000.0 * 3.5); // reach max speed in 5.0s
+  
+	while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+	{
+		stepper.run();
+	}
 
 
-  //Test the stop() API (simulate a LS strigger)
+  delay(1000);
+  stepper.moveTo( (long)(0) );
+  stepper.setSpeed( ((stepper.distanceToGo() > 0) ? +1.0 : -1.0)  * 500.0  );
+  while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+  {
+    stepper.runSpeed();
+  }
+
+  delay(3000);
+
+  //printStepperState();
+
+//**********************************************************************
+//Short accelerations
+
+for (int i = 0; i<10; i++)
+{
+  stepper.moveTo( (long)(+1 * 200*2*0.25) );
+  stepper.setAcceleration(84000.0 * 3.5); // reach max speed in 5.0s
+  
+  while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+  {
+    stepper.run();
+  }
+  stepper.moveTo( (long)(-1 * 200*2*0.25) );
+  stepper.setAcceleration(84000.0 * 3.5); // reach max speed in 5.0s
+  while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+  {
+    stepper.run();
+  }
+}
+
+
+  delay(1000);
+  stepper.moveTo( (long)(0) );
+  stepper.setSpeed( ((stepper.distanceToGo() > 0) ? +1.0 : -1.0)  * 500.0  );
+  while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+  {
+    stepper.runSpeed();
+  }
+  delay(6000);
 
 
 }
