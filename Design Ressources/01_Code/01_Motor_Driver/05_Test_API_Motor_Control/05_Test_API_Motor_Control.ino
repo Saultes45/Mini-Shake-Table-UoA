@@ -91,6 +91,19 @@
 // moved in "Global.h"
 
 
+void printStepperState(void)
+{
+  //Do some Set/Get parameter verification here
+  Serial.println("*************************************************");
+  Serial.println("Let's check some parameters, shall we?");
+  Serial.printf("maxSpeed (float): %f \r\n", stepper.maxSpeed());
+  Serial.printf("speed (float): %f \r\n", stepper.speed());
+  Serial.printf("distanceToGo (signed long): %ld \r\n", stepper.distanceToGo());
+  Serial.printf("targetPosition (signed long): %ld \r\n", stepper.targetPosition());
+  Serial.printf("currentPosition (signed long): %ld \r\n", stepper.currentPosition());
+  Serial.printf("isRunning (boolean): %d \r\n", stepper.isRunning());
+  Serial.println("*************************************************");
+} // END OF THE FUNCTION
 
 
 
@@ -112,16 +125,14 @@ void setup()
   abortMovement = false;
 
 
-  //Do some Set/Get parameter verification here
-  Serial.println("Let's check some parameters, shall we?");
-  Serial.printf("maxSpeed (float): %f \r\n", stepper.maxSpeed());
-  Serial.printf("speed (float): %f \r\n", stepper.speed());
-  Serial.printf("distanceToGo (signed long): %ld \r\n", stepper.distanceToGo());
-  Serial.printf("targetPosition (signed long): %ld \r\n", stepper.targetPosition());
-  Serial.printf("currentPosition (signed long): %ld \r\n", stepper.currentPosition());
-  Serial.printf("isRunning (boolean): %d \r\n", stepper.isRunning());
-  
+  stepper.setCurrentPosition(10);
+  printStepperState();
+  stepper.setCurrentPosition(-2563);
+  printStepperState();
+  stepper.setCurrentPosition(0);
 
+  stepper.setMaxSpeed(5000.0);
+  
 	// Enabling the stepper
 	enableStepper(true);
 	delay(1000); 
@@ -141,42 +152,52 @@ void loop()
 {
 
   // Do a constant speed movement + and then -
-  stepper.setSpeed(10.0);
-  stepper.moveTo( (long)(+1 * 100) );
+  
+  stepper.moveTo( (long)(+1 * 200) );
+  
+  stepper.setSpeed(1225.0);
+  printStepperState();
   while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+  //while ( (stepper.isRunning()) && (abortMovement == false) )
 	{
 		stepper.runSpeed();
 	}
+ //stepper.stop();
 
+  printStepperState();
   delay(3000);
   
-  stepper.setSpeed(10.0);
-  stepper.moveTo( (long)(-1 * 100) );
+  
+  stepper.moveTo( (long)(-1 * 200) );
+  stepper.setSpeed(-1225.0);
+  printStepperState();
   while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
 	{
 		stepper.runSpeed();
 	}
 
-  // Do an acceleration movement + and then -
-  stepper.setMaxSpeed(2.0);
-  stepper.setAcceleration (2.0 / 5.0); // reach max speed in 5.0s
-  stepper.moveTo( (long)(+1 * 100) );
-	while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
-	{
-		stepper.run();
-	}
+//  // Do an acceleration movement + and then -
+//  stepper.setMaxSpeed(2.0);
+//  stepper.setAcceleration(2.0 / 5.0); // reach max speed in 5.0s
+//  stepper.moveTo( (long)(+1 * 100) );
+//	while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+//	{
+//		stepper.run();
+//	}
+//
+//  delay(3000);
+//
+//  stepper.setMaxSpeed(2.0);
+//  stepper.setAcceleration(2.0 / 5.0); // reach max speed in 5.0s
+//  stepper.moveTo( (long)(-1 * 100) );
+//	while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+//	{
+//		stepper.run();
+//	}
 
   delay(3000);
 
-  stepper.setMaxSpeed(2.0);
-  stepper.setAcceleration (2.0 / 5.0); // reach max speed in 5.0s
-  stepper.moveTo( (long)(-1 * 100) );
-	while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
-	{
-		stepper.run();
-	}
-
-  delay(3000);
+  printStepperState();
 
 
   //Test the stop() API (simulate a LS strigger)
