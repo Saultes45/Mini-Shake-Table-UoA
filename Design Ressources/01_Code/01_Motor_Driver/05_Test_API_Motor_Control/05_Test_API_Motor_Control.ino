@@ -109,6 +109,11 @@ void setup()
 	// ------------
 	pinSetUp();
 
+  abortMovement = false;
+
+
+  //Do some Set/Get parameter verification here
+
 	// Enabling the stepper
 	enableStepper(true);
 	delay(1000); 
@@ -127,16 +132,48 @@ void setup()
 void loop()
 {
 
-	stepper.setSpeed(manual_MicroStepsPerSeconds); // Order matters!!!! 1-> max speed (needed for accel) 2->accel 3->target pos (steps)
-	//stepper.setAcceleration(max_allowedMicroStepsPerSecondsPerSeconds); // <DEBUG> No acceleration
+  // Do a constant speed movement + and then -
+  stepper.setSpeed(10.0);
+  stepper.moveTo( (long)(+1 * 100) );
+  while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+	{
+		stepper.runSpeed();
+	}
 
-	// 1st movement -1/2
-	//-------------------
-	stepper.moveTo( (long)(+1 * halfAmplitudeMicroSteps) );
+  delay(3000);
+  
+  stepper.setSpeed(10.0);
+  stepper.moveTo( (long)(-1 * 100) );
+  while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+	{
+		stepper.runSpeed();
+	}
+
+  // Do an acceleration movement + and then -
+  stepper.setMaxSpeed(2.0)
+  stepper.setAcceleration (2.0 / 5.0); // reach max speed in 5.0s
+  stepper.moveTo( (long)(+1 * 100) );
 	while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
 	{
 		stepper.run();
 	}
+
+  delay(3000);
+
+  stepper.setMaxSpeed(2.0)
+  stepper.setAcceleration (2.0 / 5.0); // reach max speed in 5.0s
+  stepper.moveTo( (long)(-1 * 100) );
+	while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+	{
+		stepper.run();
+	}
+
+  delay(3000);
+
+
+  //Test the stop() API (simulate a LS strigger)
+
+
 }
 
 
