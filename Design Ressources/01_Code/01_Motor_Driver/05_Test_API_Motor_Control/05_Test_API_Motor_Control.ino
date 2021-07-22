@@ -113,6 +113,14 @@ void setup()
 
 
   //Do some Set/Get parameter verification here
+  Serial.println("Let's check some parameters, shall we?");
+  Serial.printf("maxSpeed (float): %f \r\n", stepper.maxSpeed());
+  Serial.printf("speed (float): %f \r\n", stepper.speed());
+  Serial.printf("distanceToGo (signed long): %ld \r\n", stepper.distanceToGo());
+  Serial.printf("targetPosition (signed long): %ld \r\n", stepper.targetPosition());
+  Serial.printf("currentPosition (signed long): %ld \r\n", stepper.currentPosition());
+  Serial.printf("isRunning (boolean): %d \r\n", stepper.isRunning());
+  
 
 	// Enabling the stepper
 	enableStepper(true);
@@ -150,7 +158,7 @@ void loop()
 	}
 
   // Do an acceleration movement + and then -
-  stepper.setMaxSpeed(2.0)
+  stepper.setMaxSpeed(2.0);
   stepper.setAcceleration (2.0 / 5.0); // reach max speed in 5.0s
   stepper.moveTo( (long)(+1 * 100) );
 	while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
@@ -160,7 +168,7 @@ void loop()
 
   delay(3000);
 
-  stepper.setMaxSpeed(2.0)
+  stepper.setMaxSpeed(2.0);
   stepper.setAcceleration (2.0 / 5.0); // reach max speed in 5.0s
   stepper.moveTo( (long)(-1 * 100) );
 	while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
