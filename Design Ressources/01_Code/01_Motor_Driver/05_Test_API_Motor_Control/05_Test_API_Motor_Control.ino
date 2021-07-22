@@ -131,7 +131,7 @@ void setup()
   printStepperState();
   stepper.setCurrentPosition(0);
 
-  stepper.setMaxSpeed(5000.0);
+  stepper.setMaxSpeed(84000.0);
   
 	// Enabling the stepper
 	enableStepper(true);
@@ -153,51 +153,53 @@ void loop()
 
   // Do a constant speed movement + and then -
   
-  stepper.moveTo( (long)(+1 * 200) );
-  
-  stepper.setSpeed(1225.0);
-  printStepperState();
-  while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
-  //while ( (stepper.isRunning()) && (abortMovement == false) )
-	{
-		stepper.runSpeed();
-	}
- //stepper.stop();
+//  stepper.moveTo( (long)(+1 * 200) );
+//  
+//  stepper.setSpeed(1225.0);
+//  printStepperState();
+//  while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+//  //while ( (stepper.isRunning()) && (abortMovement == false) )
+//	{
+//		stepper.runSpeed();
+//	}
+// //stepper.stop();
+//
+//  printStepperState();
+//  delay(3000);
+//  
+//  
+//  stepper.moveTo( (long)(-1 * 200) );
+//  stepper.setSpeed(-1225.0);
+//  printStepperState();
+//  while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+//	{
+//		stepper.runSpeed();
+//	}
 
-  printStepperState();
-  delay(3000);
-  
-  
-  stepper.moveTo( (long)(-1 * 200) );
-  stepper.setSpeed(-1225.0);
-  printStepperState();
-  while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
-	{
-		stepper.runSpeed();
-	}
+
 
 //  // Do an acceleration movement + and then -
-//  stepper.setMaxSpeed(2.0);
-//  stepper.setAcceleration(2.0 / 5.0); // reach max speed in 5.0s
-//  stepper.moveTo( (long)(+1 * 100) );
+//  stepper.moveTo( (long)(+1 * 200*2*10) );
+//  stepper.setAcceleration(84000.0 * 3.5); // reach max speed in 5.0s
+//  
 //	while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
 //	{
 //		stepper.run();
 //	}
 //
-//  delay(3000);
+//  delay(500);
 //
-//  stepper.setMaxSpeed(2.0);
-//  stepper.setAcceleration(2.0 / 5.0); // reach max speed in 5.0s
-//  stepper.moveTo( (long)(-1 * 100) );
+//  stepper.moveTo( (long)(-1 * 200*2*10) );
+//  stepper.setAcceleration(84000.0 * 3.5); // reach max speed in 5.0s
+//  
 //	while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
 //	{
 //		stepper.run();
 //	}
-
-  delay(3000);
-
-  printStepperState();
+//
+//  delay(500);
+//
+//  //printStepperState();
 
 
   //Test the stop() API (simulate a LS strigger)

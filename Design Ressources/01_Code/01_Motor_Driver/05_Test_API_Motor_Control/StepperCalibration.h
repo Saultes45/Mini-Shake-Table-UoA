@@ -32,10 +32,12 @@
 // -------------------------- Global variables ----------------
 // Stepper calibration
 //---------------------
-float ustepsPerMM_calib       = 0.0;        // This parameter holds the calibration parameter
+
 float distanceBetweenLS_MM    = 500.0;     // For stepper calibration
 long distanceBetweenLS_uSteps = 0;          // For stepper calibration
-//bool abortCalibration         = true;       // A variable that tells if we need to stop the calibration
+float ustepsPerMM_calib       = 0.0;        // This parameter holds the calibration parameter
+
+//bool abortCalibration       = true;       // A variable that tells if we need to stop the calibration
 bool calibrationSuccess       = false;      // A variable that tells if the calibration was sucessful
 
 bool needCalibration          = true;       // Indicates if there is a current good distance calibration done

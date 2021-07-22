@@ -56,14 +56,12 @@ const uint16_t MS_DEBOUNCE_TIME         = 50;      // millisecond button debounc
 #define MODE_MANUAL 1u  // Use the 2 trimpots to execute the motion
 
 
+// -------------------------- Global variables ----------------
+
 // Mode toggle switch
 //-------------------
 volatile bool           flagMode            = false;
 volatile unsigned long  last_interrupt_time = 0;
-
-
-// -------------------------- Global variables ----------------
-
 
 // -------------------------- Functions declaration [7] --------------------------
 void      pinSetUp            (void);
@@ -354,7 +352,7 @@ void enableStepper(bool enableOrder)
     if ( (digitalRead(PIN_LIMIT_RIGHT) == false) && (digitalRead(PIN_LIMIT_LEFT) == false) && (abortMovement == false) )
     {
       #ifdef SERIAL_VERBOSE
-      Serial.print("ENABLING the stepper, be careful...");
+      Serial.println("ENABLING the stepper, be careful...");
       #endif
       digitalWrite(PIN_MOTOR_ENA,LOW); // Inverse logic (active low)
 //    digitalWrite(PIN_MOTOR_ENA,HIGH); // Normal logic (active high)
