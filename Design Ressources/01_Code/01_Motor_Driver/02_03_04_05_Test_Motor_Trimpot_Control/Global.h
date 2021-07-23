@@ -37,6 +37,7 @@
 #include "LimitSwitches.h"
 #include "Trimpot.h"
 #include "Stepper.h"
+#include "Scenario.h"
 
 
 // -------------------------- Defines --------------------------
@@ -48,12 +49,12 @@
 
 // Mode selection
 //---------------
-const uint8_t PIN_TOGGLE_MODE           = 8;    // Can be any I/O pin from 0 to 10
-const uint16_t MS_DEBOUNCE_TIME         = 50;      // millisecond button debouncing time
+const uint8_t PIN_TOGGLE_MODE           = 8; 
+const uint16_t MS_DEBOUNCE_TIME         = 50;      // mode switch button debouncing time in [ms]
 
 // Modes
-#define MODE_AUTO   0u  // Wait orders and scenarios from the Raspberry pi through USB (UART)
-#define MODE_MANUAL 1u  // Use the 2 trimpots to execute the motion
+#define MODE_SCENARIO   0u  // Wait orders and scenarios from the Raspberry pi through raspberry pi 30 pin connector (HW UART on the XIAO)
+#define MODE_MANUAL     1u  // Use the 2 trimpots to execute the motion
 
 
 // -------------------------- Global variables ----------------
@@ -181,17 +182,16 @@ void toggleSwitchModeISR()
 //******************************************************************************************
 void timerTrimpotISR()
 {
-
+  // 1st check if we are in manual mode because scenario mode doesn't use 
+  if (digitalRead(PIN_TOGGLE_MODE) == MODE_MANUAL)
+  {
+    trimpotFlag = true;// set the flag
+  }  
+  
   /* NOTICE:
-*  Do NOT put noInterupts(); here because this is a low priority and long execution time "task"
-*  Limit switches IRS should be able to trigger in there
-*/
-
-// 1st check if we are in manual mode because scenario mode doesn't use 
-if (digitalRead(PIN_TOGGLE_MODE) == MODE_MANUAL)
-{
-  trimpotFlag = true;// set the flag
-}
+  *  Do NOT put noInterupts(); here because this is a low priority and long execution time "task"
+  *  Limit switches IRS should be able to trigger in there
+  */
 
 }
 

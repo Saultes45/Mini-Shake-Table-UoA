@@ -86,7 +86,7 @@ volatile float current_trimpotAmplitude_filtered = 0.0;
 // 0.97Hz/LSB
 float trimpot_frequency_range_max_lsb   = XIAO_ADC_MAX_LSB; // in [LSB]
 float trimpot_frequency_range_min_lsb   = 6.0;        // in [LSB]
-float trimpot_frequency_max             = 0.25;       // in [Hz]
+float trimpot_frequency_max             = 0.5;       // in [Hz]
 float trimpot_frequency_min             = 0.0;        // in [Hz]
 // to use with stepper.setAcceleration
 

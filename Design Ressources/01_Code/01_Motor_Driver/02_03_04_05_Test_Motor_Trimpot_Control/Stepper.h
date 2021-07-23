@@ -57,11 +57,12 @@ const uint8_t indx_microSteppingFactorList              = 0;
 const long    nativePulsesPerRevolution                 = ((long)200); // This parameter is from the motor and CANNOT be changed 
 const long    microstepsPerRevolution                   = microSteppingFactorList[indx_microSteppingFactorList] * nativePulsesPerRevolution;
 
+const uint    singleCycleRepetition                     = 1; // In manual mode: the number of repetition of the same pattern without changing the parameters
+
 //Parameter for the different modes [4]
 //-------------------------------------
 
 //  Overall max
-
 const float   max_allowedMicroStepsPerSeconds             = 84000;
 const float   max_allowedMicroStepsPerSecondsPerSeconds   = 84000.0 * 3.5; // max speed acheved in 1/3.5 = 286 [ms]
 

@@ -187,18 +187,47 @@ void loop()
 			Serial.printf("LEFT Limit Switch ISR triggered %d, current status: %d\r\n", millis(), stateLS_l);
 		}
 	}
+ 
+  if (abortMovement == false)
+  {
+
+  }
+
  if( trimpotFlag )
  {
-    trimpotFlag = false;// set the flag 
+    trimpotFlag = false;// reset the flag 
     readTrimpots();
   }
 
+  switch(digitalRead(PIN_TOGGLE_MODE))
+  {
+    case MODE_MANUAL :
+    break;
+    case MODE_SCENARIO :
+      // check if a scenario is not already running
+      if (executingScenario == false)
+      {
+        Serial.println("Starting a new Scenario");
+      }
+      else // Then you can start a new scenario
+      {
+        Serial.println("Starting a new Scenario");
+      }
 
+    break;
+    default :
+      Serial.println("Impossible Mode selected, it must be either Manual or Scenario");
+  }
+  
+
+
+// Check if we are in manual or scenario mode
+//--------------------------------------------
 	// Single cycle stepper movement
 	//------------------------------
 
 	// if there are no errors then we can continue and do the movement. This is a BLOCKING call
-	if ( abortMovement == false && (digitalRead(PIN_TOGGLE_MODE) == MODE_MANUAL) )
+
 	{
     // Set the maximum allowed speed for manual control (idenpendant of what can be set by the trimpots 
     stepper.setMaxSpeed(manualSpeedMicroStepsPerSeconds);
@@ -216,7 +245,7 @@ void loop()
 			Serial.printf("Current trimpot values: %f | %f\r\n", current_trimpotAmplitude_filtered, current_trimpotFrequency_filtered);
 			Serial.printf("Current user manual settings: %lu | %f\r\n", halfAmplitudeMicroSteps, manual_MicroStepsPerSeconds);
                             
-			for (int i = 0; i<1; i++)
+			for (int i = 0; i< singleCycleRepetition; i++)
       {
         // 1st movement -1/2
         //-------------------
@@ -254,6 +283,7 @@ void loop()
 		}
    else if(stepper.currentPosition () != 0)
    {
+     Serial.println("Oups, looks like we didn't stop on the center of the rail, centering");
       moveTableToCenter(); // You need to have enabled the stepper BEFORE
    }
    else
