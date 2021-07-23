@@ -111,15 +111,10 @@ void setup()
 	// ------------
 	pinSetUp();
 
-
 	// ISRs
 	// ----
 	attachISRs ();
-	enableTrimpots(false); // <-- attachISRs function must be called before this 
-
-	/* After this attachInterrupt, be careful not to toggle the
-*  mode switch of the timers or the trimpots will never start
-*/
+  enableTrimpots(false); // Disable the trimpot's timer, we will renable them @ the end of the setup
 
 	// Setting some variables
 	// ----------------------
@@ -137,20 +132,20 @@ void setup()
 	enableStepper(true);
 	delay(1000); 
 
-Serial.println("---------------------------------");
+  Serial.println("---------------------------------");
 
 	// Usually here you would do the stepper distance calibration but this sketch has not been tested yest as of today (21/07/2021)
 	calibrateStepper(); // You need to have enabled the stepper BEFORE
   
-Serial.println("---------------------------------");
+  Serial.println("---------------------------------");
 
 	// Move the shake table back to the center to execute the movement of the trimpots
 	moveTableToCenter(); // You need to have enabled the stepper BEFORE
 	Serial.println("The shake table should be centered now. You are ready to go!"); 
 
-Serial.println("---------------------------------");
+  Serial.println("---------------------------------");
 
-	// if ther are no errors then we can continue
+	// if there are no errors then we can continue ther setup
 	if (abortMovement == false)
 	{
 		/*
@@ -162,11 +157,6 @@ Serial.println("---------------------------------");
 		Serial.println("---------------------------------"); // Indicates the end of the setup
 		enableTrimpots(digitalRead(PIN_TOGGLE_MODE)); 
 	}
-
-
-	// Enable the flag virtually, just once at the start as to read the location of the toggle switch
-	//flagMode = true; // <DEBUG> do we still use that?  
-
 }
 
 
@@ -182,6 +172,8 @@ void loop()
 
 	// Checking the flag of some ISRs [3]: LS and Mode select
 	//---------------------------------------------------------
+	
+	
 	if ( (flagLS_r == true) || (flagLS_l == true) )
 	{
 		if (flagLS_r)
@@ -195,29 +187,17 @@ void loop()
 			Serial.printf("LEFT Limit Switch ISR triggered %d, current status: %d\r\n", millis(), stateLS_l);
 		}
 	}
-  else if (flagMode)
-  {
-    flagMode = false; // Reset the flag immediatly
+ if( trimpotFlag )
+ {
+    trimpotFlag = false;// set the flag 
+    readTrimpots();
+  }
 
-    // Since the toggle switch ISR is triggered on
-    //  change, read the final and debounced state
-    if (digitalRead(PIN_TOGGLE_MODE) == MODE_MANUAL)
-    {
-      // If we are in Manual, then attach the timer interrupt to read the trimpots
-      enableTrimpots(true);
-    }
-    else
-    {
-      // If we are in Auto or (Scenario), then detach the
-      //  timer interrupt to stop reading the trimpots
-      enableTrimpots(false);
-    }
-  }// if (flagMode)
 
 	// Single cycle stepper movement
 	//------------------------------
 
-	// if therw are no errors then we can continue and do the movement. This is a BLOCKING call
+	// if there are no errors then we can continue and do the movement. This is a BLOCKING call
 	if ( abortMovement == false && (digitalRead(PIN_TOGGLE_MODE) == MODE_MANUAL) )
 	{
     // Set the maximum allowed speed for manual control (idenpendant of what can be set by the trimpots 
@@ -235,16 +215,7 @@ void loop()
 		{
 			Serial.printf("Current trimpot values: %f | %f\r\n", current_trimpotAmplitude_filtered, current_trimpotFrequency_filtered);
 			Serial.printf("Current user manual settings: %lu | %f\r\n", halfAmplitudeMicroSteps, manual_MicroStepsPerSeconds);
-
-
-      // ______        _         _    _              
-      // | ___ \      | |       | |  (_)             
-      // | |_/ /  ___ | |  __ _ | |_  _ __   __  ___ 
-      // |    /  / _ \| | / _` || __|| |\ \ / / / _ \
-      // | |\ \ |  __/| || (_| || |_ | | \ V / |  __/
-      // \_| \_| \___||_| \__,_| \__||_|  \_/   \___|
-                                                  
-                                                  
+                            
 			for (int i = 0; i<1; i++)
       {
         // 1st movement -1/2
@@ -287,11 +258,9 @@ void loop()
    }
    else
    {
-    delay(500);
+    delay(1);
    }
-		
 	}
-
 }
 
 

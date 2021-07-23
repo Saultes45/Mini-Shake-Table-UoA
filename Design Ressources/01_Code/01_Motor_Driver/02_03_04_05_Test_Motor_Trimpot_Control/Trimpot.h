@@ -60,13 +60,15 @@ const float XIAO_ADC_MAX_LSB            = 1023.0; // <<--- This MUST be a float!
 
 // Trimpots deadbands ([LSB] or [V] or [frequency]) -> LSB
 //--------------------------------------------------------
-const uint16_t TRMPT_DEADBAND_FREQ      = 5;
-const uint16_t TRMPT_DEADBAND_AMPL      = 5;
+const uint16_t TRMPT_DEADBAND_FREQ      = 10;
+const uint16_t TRMPT_DEADBAND_AMPL      = 10;
 
 
 
 
 // -------------------------- Global variables ----------------
+
+volatile bool trimpotFlag = false; // Flag for the HW timer ISR to tell the main loop it is time to read the trimpots 
 
 // Trimpot: Frequency
 uint16_t median1          = 0;
@@ -84,7 +86,7 @@ volatile float current_trimpotAmplitude_filtered = 0.0;
 // 0.97Hz/LSB
 float trimpot_frequency_range_max_lsb   = XIAO_ADC_MAX_LSB; // in [LSB]
 float trimpot_frequency_range_min_lsb   = 6.0;        // in [LSB]
-float trimpot_frequency_max             = 5.0;       // in [Hz]
+float trimpot_frequency_max             = 0.25;       // in [Hz]
 float trimpot_frequency_min             = 0.0;        // in [Hz]
 // to use with stepper.setAcceleration
 

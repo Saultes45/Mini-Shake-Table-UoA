@@ -63,7 +63,7 @@ const uint16_t MS_DEBOUNCE_TIME         = 50;      // millisecond button debounc
 volatile bool           flagMode            = false;
 volatile unsigned long  last_interrupt_time = 0;
 
-// -------------------------- Functions declaration [8] --------------------------
+// -------------------------- Functions declaration [9] --------------------------
 void      pinSetUp            (void);
 void      attachISRs          (void);
 void      enableTrimpots      (bool enableOrder);
@@ -79,7 +79,7 @@ void      printStepperState   (void);
 // -------------------------- ISR [4] ----------------
 
 //******************************************************************************************
-void LW_r_ISR()
+void LS_r_ISR()
 {
   noInterrupts();
   unsigned long interrupt_time = millis();
@@ -90,17 +90,23 @@ void LW_r_ISR()
     digitalWrite(LED_BUILTIN, digitalRead(PIN_LIMIT_RIGHT));
     if(digitalRead(PIN_LIMIT_RIGHT))
     {
-      enableStepper (executingCalib); // disable the stepper only if NOT in calibration
+      enableStepper(executingCalib); // disable the stepper only if NOT in calibration
       enableTrimpots(false);
-      abortMovement = true;
-      stateLS_r = true;
       
+      //Change some states and some flags
+      //--------------------------------
+      needCalibration           = true;       // Indicates if there is a current good distance calibration done
+      executingCalib            = false;      // Indicates if we are currently in distance calibration with the Limit Switches
+      calibrationSuccess        = false;      // A variable that tells if the calibration was sucessful
+      abortMovement             = true;
+      stateLS_r = true;
     }
     else
     {
       //enableStepper(false);
       //enableTrimpots(true); // enable back only if in Manual
-      stateLS_r = false;
+      abortMovement = false;
+      stateLS_r     = false;
     }
    last_interrupt_time_ls_r = interrupt_time;
   }
@@ -109,7 +115,7 @@ void LW_r_ISR()
 }
 
 //******************************************************************************************
-void LW_l_ISR()
+void LS_l_ISR()
 {
   noInterrupts();
   unsigned long interrupt_time = millis();
@@ -122,6 +128,12 @@ void LW_l_ISR()
     {
       enableStepper (executingCalib); // disable the stepper only if NOT in calibration
       enableTrimpots(false);
+      
+      //Change some states and some flags
+      //--------------------------------
+      needCalibration           = true;       // Indicates if there is a current good distance calibration done
+      executingCalib            = false;      // Indicates if we are currently in distance calibration with the Limit Switches
+      calibrationSuccess        = false;      // A variable that tells if the calibration was sucessful
       abortMovement = true;
       stateLS_l = true;
     }
@@ -146,7 +158,7 @@ void toggleSwitchModeISR()
   // If interrupts come faster than LS_DEBOUNCE_TIME, assume it's a bounce and ignore
   if (interrupt_time - last_interrupt_time > MS_DEBOUNCE_TIME)
   {
-    flagMode = true;
+    //flagMode = true;
 
     if (digitalRead(PIN_TOGGLE_MODE) == MODE_MANUAL)
     {
@@ -155,9 +167,10 @@ void toggleSwitchModeISR()
     }
     else
     {
-      // If we are in Auto or (Scenario), then detach the
+      // If we are in Scenario mode, then detach the
       //  timer interrupt to stop reading the trimpots
       enableTrimpots(false);
+      // And set a flag to ask to execute a scenario
     }
     
   }
@@ -177,79 +190,14 @@ void timerTrimpotISR()
 // 1st check if we are in manual mode because scenario mode doesn't use 
 if (digitalRead(PIN_TOGGLE_MODE) == MODE_MANUAL)
 {
-
-  // Local variable declaration
-  //----------------------------
-  uint16_t sensorValue1 = 0;
-  uint16_t sensorValue2 = 0;
-
-
-  // Read the input on analog pin 0 - Frequency
-  //-------------------------------------------
-  sensorValue1 = analogRead(PIN_TRMPT_FREQ);
-  // Apply deadband
-  if (sensorValue1 <= TRMPT_DEADBAND_FREQ)
-  {
-    // Then we are in the deadband and the outpout value should be 0[LSB]
-    sensorValue1 = 0;
-  }
-  median1 = medianFilter1.AddValue(sensorValue1);
-  current_trimpotFrequency_filtered = (median1-trimpot_frequency_range_min_lsb) * (trimpot_frequency_max - trimpot_frequency_min)/(trimpot_frequency_range_max_lsb-trimpot_frequency_range_min_lsb) + trimpot_frequency_min;
-  if (current_trimpotFrequency_filtered < trimpot_frequency_min)
-  {
-    current_trimpotFrequency_filtered = trimpot_frequency_min;
-  }
-  else if(current_trimpotFrequency_filtered > trimpot_frequency_max)
-  {
-    current_trimpotFrequency_filtered = trimpot_frequency_max;
-  }
-
-
-    // Read the input on analog pin 1 - Amplitude
-  //-----------------------------------------------
-  sensorValue2 = analogRead(PIN_TRMPT_AMPL);
-  // Apply deadband
-  if (sensorValue2 <= TRMPT_DEADBAND_AMPL)
-  {
-    // Then we are in the deadband and the outpout value should be 0[LSB]
-    sensorValue2 = 0;
-  }
-  median2 = medianFilter2.AddValue(sensorValue2);
-  current_trimpotAmplitude_filtered = (median2-trimpot_amplitude_range_min_lsb) * (trimpot_amplitude_max - trimpot_amplitude_min)/(trimpot_amplitude_range_max_lsb-trimpot_amplitude_range_min_lsb) + trimpot_amplitude_min;
-  if (current_trimpotAmplitude_filtered < trimpot_amplitude_min)
-  {
-    current_trimpotAmplitude_filtered = trimpot_amplitude_min;
-  }
-  else if(current_trimpotAmplitude_filtered > trimpot_amplitude_max)
-  {
-    current_trimpotAmplitude_filtered = trimpot_amplitude_max;
-  }
-
-
-  // Display (for  <DEBUG> only)
-  //----------------------------
-  #ifdef SHOW_TRIMPOT_VALUE
-  // Raw values
-  //  Serial.print(sensorValue1);
-  //  Serial.print(" ");
-  //  Serial.print(median1);
-  //  Serial.print(" ");
-  //  Serial.print(sensorValue2);
-  //  Serial.print(" ");
-  //  Serial.println(median2);
-  // Final values
-  Serial.print  (current_trimpotFrequency_filtered);
-  Serial.print(" ");
-  Serial.println(current_trimpotAmplitude_filtered);
-  #endif
-
+  trimpotFlag = true;// set the flag
 }
 
 }
 
 
 /*------------------------------------------------------*/
-/*-------------------- Functions [7] -------------------*/
+/*-------------------- Functions [9] -------------------*/
 /*------------------------------------------------------*/
 
 //******************************************************************************************
@@ -302,8 +250,8 @@ void attachISRs (void)
   *  For each we want to know when it is
   *  triggered and released so we can enable the drive again if necesary
   */
-  attachInterrupt(digitalPinToInterrupt(PIN_LIMIT_RIGHT), LW_r_ISR, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(PIN_LIMIT_LEFT), LW_l_ISR, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(PIN_LIMIT_RIGHT), LS_r_ISR, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(PIN_LIMIT_LEFT), LS_l_ISR, CHANGE);
 
   // To trigger an action when the toggle switch associated with the mode selection (Manual/Scenario)
   attachInterrupt(digitalPinToInterrupt(PIN_TOGGLE_MODE), toggleSwitchModeISR, CHANGE); //toggleSwitchModeISR
@@ -420,12 +368,14 @@ void  moveTableToCenter   (void)
   #endif
 
   stepper.setMaxSpeed(centeringSpeedMicroStepsPerSeconds_max);
+  stepper.setAcceleration(centeringSpeedMicroStepsPerSecondsPerSeconds);
   stepper.moveTo( (long)(0) );
-  stepper.setSpeed(((stepper.distanceToGo() > 0) ? +1.0 : -1.0) * centeringSpeedMicroStepsPerSeconds_normal);
+  //stepper.setSpeed(((stepper.distanceToGo() > 0) ? +1.0 : -1.0) * centeringSpeedMicroStepsPerSeconds_normal);
   // printStepperState();
   while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
 	{
-		stepper.runSpeed();
+		//stepper.runSpeed();
+   stepper.run();
 	}
 
   #ifdef SERIAL_VERBOSE
@@ -521,6 +471,80 @@ void printStepperState(void)
   Serial.printf("isRunning (boolean): %d \r\n", stepper.isRunning());
   Serial.println("*************************************************");
 } // END OF THE FUNCTION
+
+
+//******************************************************************************************
+void readTrimpots(void)
+{
+  if( (digitalRead(PIN_TOGGLE_MODE) == MODE_MANUAL) )
+    {
+      // Local variable declaration
+    //----------------------------
+    uint16_t sensorValue1 = 0;
+    uint16_t sensorValue2 = 0;
+
+
+  // Read the input on analog pin 0 - Frequency
+  //-------------------------------------------
+  sensorValue1 = analogRead(PIN_TRMPT_FREQ);
+  // Apply deadband
+  if (sensorValue1 <= TRMPT_DEADBAND_FREQ)
+  {
+    // Then we are in the deadband and the outpout value should be 0[LSB]
+    sensorValue1 = 0;
+  }
+  median1 = medianFilter1.AddValue(sensorValue1);
+  current_trimpotFrequency_filtered = (median1-trimpot_frequency_range_min_lsb) * (trimpot_frequency_max - trimpot_frequency_min)/(trimpot_frequency_range_max_lsb-trimpot_frequency_range_min_lsb) + trimpot_frequency_min;
+  if (current_trimpotFrequency_filtered < trimpot_frequency_min)
+  {
+    current_trimpotFrequency_filtered = trimpot_frequency_min;
+  }
+  else if(current_trimpotFrequency_filtered > trimpot_frequency_max)
+  {
+    current_trimpotFrequency_filtered = trimpot_frequency_max;
+  }
+
+
+    // Read the input on analog pin 1 - Amplitude
+  //-----------------------------------------------
+  sensorValue2 = analogRead(PIN_TRMPT_AMPL);
+  // Apply deadband
+  if (sensorValue2 <= TRMPT_DEADBAND_AMPL)
+  {
+    // Then we are in the deadband and the outpout value should be 0[LSB]
+    sensorValue2 = 0;
+  }
+  median2 = medianFilter2.AddValue(sensorValue2);
+  current_trimpotAmplitude_filtered = (median2-trimpot_amplitude_range_min_lsb) * (trimpot_amplitude_max - trimpot_amplitude_min)/(trimpot_amplitude_range_max_lsb-trimpot_amplitude_range_min_lsb) + trimpot_amplitude_min;
+  if (current_trimpotAmplitude_filtered < trimpot_amplitude_min)
+  {
+    current_trimpotAmplitude_filtered = trimpot_amplitude_min;
+  }
+  else if(current_trimpotAmplitude_filtered > trimpot_amplitude_max)
+  {
+    current_trimpotAmplitude_filtered = trimpot_amplitude_max;
+  }
+
+
+  // Display (for  <DEBUG> only)
+  //----------------------------
+  #ifdef SHOW_TRIMPOT_VALUE
+  // Raw values
+  //  Serial.print(sensorValue1);
+  //  Serial.print(" ");
+  //  Serial.print(median1);
+  //  Serial.print(" ");
+  //  Serial.print(sensorValue2);
+  //  Serial.print(" ");
+  //  Serial.println(median2);
+  // Final values
+  Serial.print  (current_trimpotFrequency_filtered);
+  Serial.print(" ");
+  Serial.println(current_trimpotAmplitude_filtered);
+  #endif
+      
+    }  
+}// END OF THE FUNCTION
 
 
 // END OF THE FILE
