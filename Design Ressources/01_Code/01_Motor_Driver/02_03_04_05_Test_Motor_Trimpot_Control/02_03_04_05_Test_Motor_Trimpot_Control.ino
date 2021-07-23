@@ -101,7 +101,9 @@ void setup()
 	// Debug communication channel UART through USB-C
 	// -----------------------------------------------
 	Serial.begin(CONSOLE_BAUD_RATE); //Begin serial communication (USB)
+	#ifdef WAIT_FOR_SERIAL
 	while (! Serial); // Wait for user to open the com port
+  #endif
 	delay(1000);
 	Serial.println("---------------------------------");
 
@@ -135,12 +137,18 @@ void setup()
 	enableStepper(true);
 	delay(1000); 
 
+Serial.println("---------------------------------");
+
 	// Usually here you would do the stepper distance calibration but this sketch has not been tested yest as of today (21/07/2021)
 	calibrateStepper(); // You need to have enabled the stepper BEFORE
+  
+Serial.println("---------------------------------");
 
 	// Move the shake table back to the center to execute the movement of the trimpots
 	moveTableToCenter(); // You need to have enabled the stepper BEFORE
 	Serial.println("The shake table should be centered now. You are ready to go!"); 
+
+Serial.println("---------------------------------");
 
 	// if ther are no errors then we can continue
 	if (abortMovement == false)
@@ -149,9 +157,6 @@ void setup()
 	* Make sure the mode recorded in this SW is 
 	* the same as the one on the physical toggle switch 
 	*/
-
-    stepper.setMaxSpeed(max_allowedMicroStepsPerSeconds);
-    stepper.setAcceleration(max_allowedMicroStepsPerSecondsPerSeconds); // reach max speed in 5.0s
 
 		displayStepperSettings();
 		Serial.println("---------------------------------"); // Indicates the end of the setup
@@ -190,24 +195,24 @@ void loop()
 			Serial.printf("LEFT Limit Switch ISR triggered %d, current status: %d\r\n", millis(), stateLS_l);
 		}
 	}
-	//  else if (flagMode)
-	//  {
-	//    flagMode = false; // Reset the flag immediatly
-	//
-	//    // Since the toggle switch ISR is triggered on
-	//    //  change, read the final and debounced state
-	//    if (digitalRead(PIN_TOGGLE_MODE) == MODE_MANUAL)
-	//    {
-	//      // If we are in Manual, then attach the timer interrupt to read the trimpots
-	//      enableTrimpots(true);
-	//    }
-	//    else
-	//    {
-	//      // If we are in Auto or (Scenario), then detach the
-	//      //  timer interrupt to stop reading the trimpots
-	//      enableTrimpots(false);
-	//    }
-	//  }// if (flagMode)
+  else if (flagMode)
+  {
+    flagMode = false; // Reset the flag immediatly
+
+    // Since the toggle switch ISR is triggered on
+    //  change, read the final and debounced state
+    if (digitalRead(PIN_TOGGLE_MODE) == MODE_MANUAL)
+    {
+      // If we are in Manual, then attach the timer interrupt to read the trimpots
+      enableTrimpots(true);
+    }
+    else
+    {
+      // If we are in Auto or (Scenario), then detach the
+      //  timer interrupt to stop reading the trimpots
+      enableTrimpots(false);
+    }
+  }// if (flagMode)
 
 	// Single cycle stepper movement
 	//------------------------------
@@ -215,10 +220,15 @@ void loop()
 	// if therw are no errors then we can continue and do the movement. This is a BLOCKING call
 	if ( abortMovement == false && (digitalRead(PIN_TOGGLE_MODE) == MODE_MANUAL) )
 	{
+    // Set the maximum allowed speed for manual control (idenpendant of what can be set by the trimpots 
+    stepper.setMaxSpeed(manualSpeedMicroStepsPerSeconds);
+    stepper.setAcceleration(manualSpeedMicroStepsPerSecondsPerSeconds);
 		// Serial.printf("Current mode: %d | %d\r\n", digitalRead(PIN_TOGGLE_MODE), MODE_MANUAL); 
-		
+
+    // Convert trimpot values to stepper parameters
+    //----------------------------------------------
 		long 	halfAmplitudeMicroSteps 		  = (long)(0.5 * (current_trimpotAmplitude_filtered * ustepsPerMM_calib)); 
-		float manual_MicroStepsPerSeconds 	= (float)( (float)halfAmplitudeMicroSteps * current_trimpotFrequency_filtered );
+		float manual_MicroStepsPerSeconds 	= (float)( (float)halfAmplitudeMicroSteps * 2 * current_trimpotFrequency_filtered);
 
 		// Before executing a movement, check that the orders from the trimpots make sense, ie > 0?
 		if ( (halfAmplitudeMicroSteps > ((long)0)) && (manual_MicroStepsPerSeconds > 0.0) )
@@ -240,23 +250,26 @@ void loop()
         // 1st movement -1/2
         //-------------------
         stepper.move( (long)(-1 * halfAmplitudeMicroSteps) );
+        stepper.setSpeed( ((stepper.distanceToGo() > 0) ? +1.0 : -1.0)  * manual_MicroStepsPerSeconds);
         while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
         {
           stepper.run();
         }
 
-        // // 2nd movement +1 
-        // //-------------------
-        // stepper.move( (long)(+2 * halfAmplitudeMicroSteps) );
-        // while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
-        // {
-        //   stepper.run();
-        // }
+         // 2nd movement +1 
+         //-------------------
+          stepper.move( (long)(+2 * halfAmplitudeMicroSteps) );
+          stepper.setSpeed( ((stepper.distanceToGo() > 0) ? +1.0 : -1.0)  * manual_MicroStepsPerSeconds);
+         while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+         {
+           stepper.run();
+         }
         
 
         // 3rd movement -1/2
         //-------------------
-        stepper.move( (long)(+1 * halfAmplitudeMicroSteps) );
+        stepper.move( (long)(-1 * halfAmplitudeMicroSteps) );
+        stepper.setSpeed( ((stepper.distanceToGo() > 0) ? +1.0 : -1.0)  * manual_MicroStepsPerSeconds);
         while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
         {
           stepper.run();
@@ -264,11 +277,18 @@ void loop()
 
       }
 
-      moveTableToCenter(); // You need to have enabled the stepper BEFORE
-
+      
 			// Here we should be where we started: at the center, ready to start an oscillation again
 
 		}
+   else if(stepper.currentPosition () != 0)
+   {
+      moveTableToCenter(); // You need to have enabled the stepper BEFORE
+   }
+   else
+   {
+    delay(500);
+   }
 		
 	}
 

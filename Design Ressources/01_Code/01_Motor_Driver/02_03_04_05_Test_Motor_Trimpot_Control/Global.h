@@ -56,16 +56,14 @@ const uint16_t MS_DEBOUNCE_TIME         = 50;      // millisecond button debounc
 #define MODE_MANUAL 1u  // Use the 2 trimpots to execute the motion
 
 
+// -------------------------- Global variables ----------------
+
 // Mode toggle switch
 //-------------------
 volatile bool           flagMode            = false;
 volatile unsigned long  last_interrupt_time = 0;
 
-
-// -------------------------- Global variables ----------------
-
-
-// -------------------------- Functions declaration [7] --------------------------
+// -------------------------- Functions declaration [8] --------------------------
 void      pinSetUp            (void);
 void      attachISRs          (void);
 void      enableTrimpots      (bool enableOrder);
@@ -73,6 +71,7 @@ void      enableStepper       (bool enableOrder);
 void      displayStepperSettings(void);
 void      moveTableToCenter   (void);
 void      calibrateStepper    (void);
+void      printStepperState   (void);
 
 
 
@@ -354,7 +353,7 @@ void enableStepper(bool enableOrder)
     if ( (digitalRead(PIN_LIMIT_RIGHT) == false) && (digitalRead(PIN_LIMIT_LEFT) == false) && (abortMovement == false) )
     {
       #ifdef SERIAL_VERBOSE
-      Serial.print("ENABLING the stepper, be careful...");
+      Serial.println("ENABLING the stepper, be careful...");
       #endif
       digitalWrite(PIN_MOTOR_ENA,LOW); // Inverse logic (active low)
 //    digitalWrite(PIN_MOTOR_ENA,HIGH); // Normal logic (active high)
@@ -396,14 +395,14 @@ void displayStepperSettings(void)
   // To calculate max acceleration, max speed must be set first
 
   Serial.print("Current max speed: ");
-  Serial.println(stepper.speed()); // Returns the most recent speed in steps per second
+  Serial.println(stepper.maxSpeed ()); // Returns the most recent speed in steps per second
   Serial.print("Setting max speed to: ");
   Serial.println(max_allowedMicroStepsPerSeconds); // Returns the most recent speed in [steps per second]
   stepper.setMaxSpeed(max_allowedMicroStepsPerSeconds);
-  Serial.print("New max speed is ");
-  Serial.println(stepper.speed()); // Returns the most recent speed in steps per second (float)
+  Serial.print("New max speed is: ");
+  Serial.println(stepper.maxSpeed ()); // Returns the most recent speed in steps per second (float)
 
-  Serial.print("Setting acceleration to ");
+  Serial.print("Setting acceleration to: ");
   Serial.println(max_allowedMicroStepsPerSecondsPerSeconds);
   stepper.setAcceleration(max_allowedMicroStepsPerSecondsPerSeconds);
   // No function to read back set acceleration
@@ -416,28 +415,18 @@ void  moveTableToCenter   (void)
 {
 
   #ifdef SERIAL_VERBOSE
-  Serial.println("Function moveTableToCenter called, for this to work, you need to have the stepper enabled ALREADY");
+  Serial.println("Function moveTableToCenter called. For this to work, the stepper must be ALREADY enabled");
   Serial.printf("Moving table back to the center position: %ld [mm] ... ", (long)(distanceBetweenLS_MM/2.0 * ustepsPerMM_calib));
   #endif
 
-  stepper.setSpeed(centeringSpeedMicroStepsPerSeconds); // Order matters!!!! 1-> max speed (needed for accel) 2->accel 3->target pos (steps)
-  stepper.setAcceleration(centeringSpeedMicroStepsPerSecondsPerSeconds);
-  stepper.moveTo( (long)(distanceBetweenLS_MM/2.0 * ustepsPerMM_calib) );
+  stepper.setMaxSpeed(centeringSpeedMicroStepsPerSeconds_max);
+  stepper.moveTo( (long)(0) );
+  stepper.setSpeed(((stepper.distanceToGo() > 0) ? +1.0 : -1.0) * centeringSpeedMicroStepsPerSeconds_normal);
+  // printStepperState();
   while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
-  {
-    stepper.run();
-  }
-
-  /* Parameters:  position (long) The position in steps of wherever the 
-   *  motor happens to be right now 
-  *  Resets the current position of the motor, so that 
-  *  wherever the motor happens to be right now is considered 
-  *  to be the new 0 position. Useful for setting a zero position 
-  *  on a stepper after an initial hardware positioning move. Has 
-  *  the side effect of setting the current motor speed to 0.
-  */
-
-   stepper.setCurrentPosition(0);
+	{
+		stepper.runSpeed();
+	}
 
   #ifdef SERIAL_VERBOSE
   Serial.println("done");
@@ -517,6 +506,21 @@ void  calibrateStepper (void) // <TODO> This is currently a placeholder, use the
     #endif
   }
 }// END OF THE FUNCTION
+
+//******************************************************************************************
+void printStepperState(void)
+{
+  //Do some Set/Get parameter verification here
+  Serial.println("*************************************************");
+  Serial.println("Let's check some parameters, shall we?");
+  Serial.printf("maxSpeed (float): %f \r\n", stepper.maxSpeed());
+  Serial.printf("speed (float): %f \r\n", stepper.speed());
+  Serial.printf("distanceToGo (signed long): %ld \r\n", stepper.distanceToGo());
+  Serial.printf("targetPosition (signed long): %ld \r\n", stepper.targetPosition());
+  Serial.printf("currentPosition (signed long): %ld \r\n", stepper.currentPosition());
+  Serial.printf("isRunning (boolean): %d \r\n", stepper.isRunning());
+  Serial.println("*************************************************");
+} // END OF THE FUNCTION
 
 
 // END OF THE FILE
