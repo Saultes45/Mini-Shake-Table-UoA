@@ -60,8 +60,8 @@ const float XIAO_ADC_MAX_LSB            = 1023.0; // <<--- This MUST be a float!
 
 // Trimpots deadbands ([LSB] or [V] or [frequency]) -> LSB
 //--------------------------------------------------------
-const uint16_t TRMPT_DEADBAND_FREQ      = 25;
-const uint16_t TRMPT_DEADBAND_AMPL      = 25;
+const uint16_t TRMPT_DEADBAND_FREQ      = 10;
+const uint16_t TRMPT_DEADBAND_AMPL      = 10;
 
 
 
@@ -84,7 +84,7 @@ volatile float current_trimpotAmplitude_filtered = 0.0;
 // 0.97Hz/LSB
 float trimpot_frequency_range_max_lsb   = XIAO_ADC_MAX_LSB; // in [LSB]
 float trimpot_frequency_range_min_lsb   = 6.0;        // in [LSB]
-float trimpot_frequency_max             = 1.0;       // in [Hz]
+float trimpot_frequency_max             = 5.0;       // in [Hz]
 float trimpot_frequency_min             = 0.0;        // in [Hz]
 // to use with stepper.setAcceleration
 
@@ -92,7 +92,7 @@ float trimpot_frequency_min             = 0.0;        // in [Hz]
 // 9.765625E-4 stepper shaft rotations/LSB
 float trimpot_amplitude_range_max_lsb   = XIAO_ADC_MAX_LSB;  // in [LSB]
 float trimpot_amplitude_range_min_lsb   = 6.0;         // in [LSB]
-float trimpot_amplitude_max             = 200.0;         // in [mm]
+float trimpot_amplitude_max             = 400.0;         // in [mm]
 float trimpot_amplitude_min             = 0.0;         // in [mm]
 // to use with : stepper.moveTo
 

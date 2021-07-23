@@ -136,10 +136,10 @@ void setup()
 	delay(1000); 
 
 	// Usually here you would do the stepper distance calibration but this sketch has not been tested yest as of today (21/07/2021)
-	calibrateStepper(); // You need to hav enabled the stepper BEFORE
+	calibrateStepper(); // You need to have enabled the stepper BEFORE
 
 	// Move the shake table back to the center to execute the movement of the trimpots
-	moveTableToCenter(); // You need to hav enabled the stepper BEFORE
+	moveTableToCenter(); // You need to have enabled the stepper BEFORE
 	Serial.println("The shake table should be centered now. You are ready to go!"); 
 
 	// if ther are no errors then we can continue
@@ -149,7 +149,11 @@ void setup()
 	* Make sure the mode recorded in this SW is 
 	* the same as the one on the physical toggle switch 
 	*/
-		void displayStepperSettings(void);
+
+    stepper.setMaxSpeed(max_allowedMicroStepsPerSeconds);
+    stepper.setAcceleration(max_allowedMicroStepsPerSecondsPerSeconds); // reach max speed in 5.0s
+
+		displayStepperSettings();
 		Serial.println("---------------------------------"); // Indicates the end of the setup
 		enableTrimpots(digitalRead(PIN_TOGGLE_MODE)); 
 	}
@@ -211,10 +215,10 @@ void loop()
 	// if therw are no errors then we can continue and do the movement. This is a BLOCKING call
 	if ( abortMovement == false && (digitalRead(PIN_TOGGLE_MODE) == MODE_MANUAL) )
 	{
-		Serial.printf("Current mode: %d | %d\r\n", digitalRead(PIN_TOGGLE_MODE), MODE_MANUAL); 
+		// Serial.printf("Current mode: %d | %d\r\n", digitalRead(PIN_TOGGLE_MODE), MODE_MANUAL); 
 		
-		long 	halfAmplitudeMicroSteps 		= (long)(0.5 * (current_trimpotAmplitude_filtered * ustepsPerMM_calib)); 
-		float 	manual_MicroStepsPerSeconds 	= (float)( (float)halfAmplitudeMicroSteps * current_trimpotFrequency_filtered );
+		long 	halfAmplitudeMicroSteps 		  = (long)(0.5 * (current_trimpotAmplitude_filtered * ustepsPerMM_calib)); 
+		float manual_MicroStepsPerSeconds 	= (float)( (float)halfAmplitudeMicroSteps * current_trimpotFrequency_filtered );
 
 		// Before executing a movement, check that the orders from the trimpots make sense, ie > 0?
 		if ( (halfAmplitudeMicroSteps > ((long)0)) && (manual_MicroStepsPerSeconds > 0.0) )
@@ -222,36 +226,45 @@ void loop()
 			Serial.printf("Current trimpot values: %f | %f\r\n", current_trimpotAmplitude_filtered, current_trimpotFrequency_filtered);
 			Serial.printf("Current user manual settings: %lu | %f\r\n", halfAmplitudeMicroSteps, manual_MicroStepsPerSeconds);
 
-			
-			// apply to the motor
 
-			stepper.setSpeed(manual_MicroStepsPerSeconds); // Order matters!!!! 1-> max speed (needed for accel) 2->accel 3->target pos (steps)
-			//stepper.setAcceleration(max_allowedMicroStepsPerSecondsPerSeconds); // <DEBUG> No acceleration
+      // ______        _         _    _              
+      // | ___ \      | |       | |  (_)             
+      // | |_/ /  ___ | |  __ _ | |_  _ __   __  ___ 
+      // |    /  / _ \| | / _` || __|| |\ \ / / / _ \
+      // | |\ \ |  __/| || (_| || |_ | | \ V / |  __/
+      // \_| \_| \___||_| \__,_| \__||_|  \_/   \___|
+                                                  
+                                                  
+			for (int i = 0; i<1; i++)
+      {
+        // 1st movement -1/2
+        //-------------------
+        stepper.move( (long)(-1 * halfAmplitudeMicroSteps) );
+        while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+        {
+          stepper.run();
+        }
 
-			// 1st movement -1/2
-			//-------------------
-			stepper.moveTo( (long)(+1 * halfAmplitudeMicroSteps) );
-			while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
-			{
-				stepper.run();
-			}
+        // // 2nd movement +1 
+        // //-------------------
+        // stepper.move( (long)(+2 * halfAmplitudeMicroSteps) );
+        // while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+        // {
+        //   stepper.run();
+        // }
+        
 
-			// 2nd movement +1 
-			//-------------------
-			//    stepper.moveTo( (long)(+2 * halfAmplitudeMicroSteps) );
-			//    while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
-			//    {
-			//      stepper.run();
-			//    }
-			
+        // 3rd movement -1/2
+        //-------------------
+        stepper.move( (long)(+1 * halfAmplitudeMicroSteps) );
+        while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+        {
+          stepper.run();
+        }
 
-			// 3rd movement -1/2
-			//-------------------
-			stepper.moveTo( (long)(+1 * halfAmplitudeMicroSteps) );
-			while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
-			{
-				stepper.run();
-			}
+      }
+
+      moveTableToCenter(); // You need to have enabled the stepper BEFORE
 
 			// Here we should be where we started: at the center, ready to start an oscillation again
 

@@ -449,26 +449,57 @@ void  moveTableToCenter   (void)
 void  calibrateStepper (void) // <TODO> This is currently a placeholder, use the code from "05_02_TestCalibartion_StepperDistance_Limitswitches"
 {
 
+  /* Theory of operation:
+  * Wherever the motor is NOW, move right until the RIGHT LS is triggerd (or timeout), if the LFT one triggers, ABORT
+  * This is the START position. 
+  * Move to the the LEFT until (timeout) or LEFT LS triggers, if the LFT one triggers, ABORT
+  */
+
   #ifdef SERIAL_VERBOSE
-  Serial.println("Function calibrateStepper called, for this to work, you need to have the stepper enabled ALREADY");
+  Serial.println("Function calibrateStepper called. For this to work, the stepper must be ALREADY enabled");
   Serial.print("Starting calibration...");
   #endif
 
-  // (Re)setting some variables 
-  // <DEBUG>
-  // This is the START position, get the table (motor) position and save it 
-    distanceBetweenLS_uSteps = 500; //stepper.currentPosition(); // This is also a distance since we marked the 0 as the right-most 
-    
-    //* Calculate how many steps have been executed to travel the USER-DEFINED distance between the 2 LS
+  // Let's move to the RIGHT: RELATIVE 
+  stepper.setMaxSpeed(calibrationSpeedMicroStepsPerSeconds_max);
+  stepper.move( (long)(+1 * calibrationExplorationMicroSteps) ); // This RELATIVE!
+  stepper.setSpeed(((stepper.distanceToGo() > 0) ? +1.0 : -1.0) * calibrationSpeedMicroStepsPerSeconds_normal);
+  // printStepperState();
+  while ( (stepper.distanceToGo() != 0) && (abortMovement == false) )
+	{
+		stepper.runSpeed();
+	}
 
-    ustepsPerMM_calib = distanceBetweenLS_uSteps / distanceBetweenLS_MM;
+  // Set the rightmost position TEMPORARY as 0 to make the step counting easy as
+  stepper.setCurrentPosition(0);
 
-    Serial.println("Calibration success!");
-    Serial.printf("The calibrated step distance bewteen the 2 limit switches is %ld \r\n", distanceBetweenLS_uSteps);
-    Serial.printf("The user-defined distance bewteen the 2 limit switches is %f [mm] \r\n", distanceBetweenLS_MM);
-    Serial.printf("The calibration ratio is: %f [mm/steps]\r\n", ustepsPerMM_calib);
-    
-    calibrationSuccess = true;
+  // Let's move to the LEFT: RELATIVE 
+  stepper.setMaxSpeed(calibrationSpeedMicroStepsPerSeconds_max);
+  stepper.move( (long)(-1 * calibrationExplorationMicroSteps) ); // This RELATIVE!
+  stepper.setSpeed( ((stepper.distanceToGo() > 0) ? +1.0 : -1.0) * calibrationSpeedMicroStepsPerSeconds_normal );
+  // printStepperState();
+  while ( (stepper.distanceToGo() != 0) && (abortMovement == false) )
+	{
+		stepper.runSpeed();
+	}
+
+  
+  // This is the END position, get the table (motor) position and save it (homebrew abs())
+  //distanceBetweenLS_uSteps = (stepper.currentPosition() > 0) ? +1.0 : -1.0) * stepper.currentPosition();// This is also a distance since we TEMPORARY marked the 0mm as the right-most LS
+  distanceBetweenLS_uSteps = 501; // <DEBUG> 
+
+  //* Calculate how many steps have been executed to travel the USER-DEFINED distance between the 2 LS
+  ustepsPerMM_calib = distanceBetweenLS_uSteps / distanceBetweenLS_MM;
+
+  // Define where the 0 position is (it is @ the center of the LS)
+  stepper.setCurrentPosition( -1 * (long)(distanceBetweenLS_uSteps/2) );
+
+  Serial.println("Calibration success!");
+  Serial.printf("The calibrated distance bewteen the 2 limit switches in STEPS is %ld \r\n", distanceBetweenLS_uSteps);
+  Serial.printf("The user-defined distance bewteen the 2 limit switches is %f [mm] \r\n", distanceBetweenLS_MM);
+  Serial.printf("The calibrated STEPS to MM ratio is: %f [mm/steps]\r\n", ustepsPerMM_calib);
+  
+  calibrationSuccess = true;
   
 
   if(calibrationSuccess)
@@ -485,9 +516,6 @@ void  calibrateStepper (void) // <TODO> This is currently a placeholder, use the
     Serial.println("Calibration failed, try again");
     #endif
   }
-
-
-
 }// END OF THE FUNCTION
 
 
