@@ -33,7 +33,7 @@
 
 // Personal libraries
 //--------------------
-#include "StepperCalibration.h"     
+#include "StepperCalibration.h"
 #include "LimitSwitches.h"
 #include "Trimpot.h"
 #include "Stepper.h"
@@ -43,14 +43,14 @@
 // -------------------------- Defines --------------------------
 // General
 #define SERIAL_VERBOSE                        // Uncomment to see more debug messages
-//#define WAIT_FOR_SERIAL                       // Uncomment to wait for the serial port to be opened from the PC end before starting    
+//#define WAIT_FOR_SERIAL                       // Uncomment to wait for the serial port to be opened from the PC end before starting
 #define CONSOLE_BAUD_RATE             115200  // Baudrate in [bauds] for serial communication to the console
 //#define SHOW_TRIMPOT_VALUE                  // Uncomment to see the calculated frequency and amplitude values in the ISR
 
 
 // Mode selection
 //---------------
-const uint8_t PIN_TOGGLE_MODE           = 8; 
+const uint8_t PIN_TOGGLE_MODE           = 8;
 const uint16_t MS_DEBOUNCE_TIME         = 50;      // mode switch button debouncing time in [ms]
 
 // Modes
@@ -65,7 +65,7 @@ const uint16_t MS_DEBOUNCE_TIME         = 50;      // mode switch button debounc
 volatile bool           flagMode            = false;
 volatile unsigned long  last_interrupt_time = 0;
 
-// -------------------------- Functions declaration [10] --------------------------
+// -------------------------- Functions declaration [11] --------------------------
 void      pinSetUp                (void);
 void      attachISRs              (void);
 void      enableTrimpots          (bool enableOrder);
@@ -75,6 +75,7 @@ void      moveTableToCenter       (void);
 void      calibrateStepper        (void);
 void      printStepperState       (void);
 void      checkISRFlags           (void);
+void 	  singleCyleMovement(long  halfAmplitudeMicroSteps, float manual_MicroStepsPerSeconds)
 
 
 
@@ -184,11 +185,11 @@ void toggleSwitchModeISR()
 //******************************************************************************************
 void timerTrimpotISR()
 {
-	// 1st check if we are in manual mode because scenario mode doesn't use 
+	// 1st check if we are in manual mode because scenario mode doesn't use
 	if (digitalRead(PIN_TOGGLE_MODE) == MODE_MANUAL)
 	{
 		trimpotFlag = true;// set the flag
-	}  
+	}
 
 	/* NOTICE:
 *  Do NOT put noInterupts(); here because this is a low priority and long execution time "task"
@@ -392,7 +393,7 @@ void  calibrateStepper (void) // <TODO> This is currently a placeholder, use the
 
 	/* Theory of operation:
 * Wherever the motor is NOW, move right until the RIGHT LS is triggerd (or timeout), if the LFT one triggers, ABORT
-* This is the START position. 
+* This is the START position.
 * Move to the the LEFT until (timeout) or LEFT LS triggers, if the LFT one triggers, ABORT
 */
 
@@ -401,7 +402,7 @@ void  calibrateStepper (void) // <TODO> This is currently a placeholder, use the
 	Serial.print("Starting calibration...");
 #endif
 
-	// Let's move to the RIGHT: RELATIVE 
+	// Let's move to the RIGHT: RELATIVE
 	stepper.setMaxSpeed(calibrationSpeedMicroStepsPerSeconds_max);
 	stepper.move( (long)(+1 * calibrationExplorationMicroSteps) ); // This RELATIVE!
 	stepper.setSpeed(((stepper.distanceToGo() > 0) ? +1.0 : -1.0) * calibrationSpeedMicroStepsPerSeconds_normal);
@@ -414,7 +415,7 @@ void  calibrateStepper (void) // <TODO> This is currently a placeholder, use the
 	// Set the rightmost position TEMPORARY as 0 to make the step counting easy as
 	stepper.setCurrentPosition(0);
 
-	// Let's move to the LEFT: RELATIVE 
+	// Let's move to the LEFT: RELATIVE
 	stepper.setMaxSpeed(calibrationSpeedMicroStepsPerSeconds_max);
 	stepper.move( (long)(-1 * calibrationExplorationMicroSteps) ); // This RELATIVE!
 	stepper.setSpeed( ((stepper.distanceToGo() > 0) ? +1.0 : -1.0) * calibrationSpeedMicroStepsPerSeconds_normal );
@@ -427,7 +428,7 @@ void  calibrateStepper (void) // <TODO> This is currently a placeholder, use the
 
 	// This is the END position, get the table (motor) position and save it (homebrew abs())
 	//distanceBetweenLS_uSteps = (stepper.currentPosition() > 0) ? +1.0 : -1.0) * stepper.currentPosition();// This is also a distance since we TEMPORARY marked the 0mm as the right-most LS
-	distanceBetweenLS_uSteps = 501; // <DEBUG> 
+	distanceBetweenLS_uSteps = 501; // <DEBUG>
 
 	//* Calculate how many steps have been executed to travel the USER-DEFINED distance between the 2 LS
 	ustepsPerMM_calib = distanceBetweenLS_uSteps / distanceBetweenLS_MM;
@@ -545,7 +546,7 @@ void readTrimpots(void)
 		Serial.println(current_trimpotAmplitude_filtered);
 #endif
 		
-	}  
+	}
 }// END OF THE FUNCTION
 
 
@@ -570,12 +571,45 @@ void checkISRFlags(void)
 
 	if( trimpotFlag )
 	{
-		trimpotFlag = false;// reset the flag 
+		trimpotFlag = false;// reset the flag
 		readTrimpots();
 	}
 
 } // END OF THE FUNCTION
 
+
+//******************************************************************************************
+void singleCyleMovement(long  halfAmplitudeMicroSteps, float manual_MicroStepsPerSeconds)
+{
+	// 1st movement -1/2
+	//-------------------
+	stepper.move( (long)(-1 * halfAmplitudeMicroSteps) );
+	stepper.setSpeed( ((stepper.distanceToGo() > 0) ? +1.0 : -1.0)  * manual_MicroStepsPerSeconds);
+	while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+	{
+		stepper.run();
+	}
+
+	// 2nd movement +1
+	//-------------------
+	stepper.move( (long)(+2 * halfAmplitudeMicroSteps) );
+	stepper.setSpeed( ((stepper.distanceToGo() > 0) ? +1.0 : -1.0)  * manual_MicroStepsPerSeconds);
+	while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+	{
+		stepper.run();
+	}
+	
+
+	// 3rd movement -1/2
+	//-------------------
+	stepper.move( (long)(-1 * halfAmplitudeMicroSteps) );
+	stepper.setSpeed( ((stepper.distanceToGo() > 0) ? +1.0 : -1.0)  * manual_MicroStepsPerSeconds);
+	while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+	{
+		stepper.run();
+	}
+	
+}// END OF THE FUNCTION
 
 
 

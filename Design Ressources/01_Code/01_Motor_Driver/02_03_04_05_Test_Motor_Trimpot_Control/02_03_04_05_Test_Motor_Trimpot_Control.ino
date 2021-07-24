@@ -122,13 +122,12 @@ void setup()
 	calibrationSuccess       = false;
 	needCalibration          = true;
 
-
-	Serial.println("Make sure the manual \"stepper enable\" toggle switch on the front panel is set to the \"ENABLED\" ");
+	// Enabling the stepper
+	//---------------------
+	Serial.println("Make sure the manual \"stepper enable\" toggle switch on the front panel is set to the \"ENABLED\"");
 	delay(1000); 
 	Serial.println(" /!\\ Be careful, we are going to enable the stepper");
 	delay(1000);  
-
-	// Enabling the stepper
 	enableStepper(true);
 	delay(1000); 
 
@@ -157,7 +156,7 @@ void setup()
 		
 		Serial.println("---------------------------------"); // Indicates the end of the setup
 		
-		enableTrimpots(digitalRead(PIN_TOGGLE_MODE)); 
+		enableTrimpots(digitalRead(PIN_TOGGLE_MODE)); // We enable the trimpots here only if we the toggle switch is in manual mode
 	}
 }
 
@@ -176,108 +175,93 @@ void loop()
 	//---------------------------------------------------------
 	checkISRFlags();
 	
-	if (abortMovement == false) // the 1rst check of this variable out of many more
+	if (abortMovement == false) // the 1st check of this variable out of many more
 	{
+
+		// Serial.printf("Current mode: %d | %d\r\n", digitalRead(PIN_TOGGLE_MODE), MODE_MANUAL); 
+
 		switch(digitalRead(PIN_TOGGLE_MODE))
 		{
+      //-----------------------------------------------------------------------------------
 		case MODE_MANUAL :
+
+			
+			// Convert trimpot values to stepper parameters
+			//----------------------------------------------
+			long  halfAmplitudeMicroSteps       = (long)(0.5 * (current_trimpotAmplitude_filtered * ustepsPerMM_calib)); 
+			float manual_MicroStepsPerSeconds   = (float)( (float)halfAmplitudeMicroSteps * 2 * current_trimpotFrequency_filtered);
+
+
+			// Before executing a movement, check that the orders from the trimpots make sense, ie > 0?
+			if ( (halfAmplitudeMicroSteps > ((long)0)) && (manual_MicroStepsPerSeconds > 0.0) )
+			{
+				Serial.printf("Current trimpots %f \t %f \t manual settings: %lu \t %f\r\n", current_trimpotAmplitude_filtered, current_trimpotFrequency_filtered, halfAmplitudeMicroSteps, manual_MicroStepsPerSeconds);
+
+				// Set the maximum allowed speed for manual control (idenpendant of what can be set by the trimpots 
+				stepper.setMaxSpeed(manualSpeedMicroStepsPerSeconds);
+				stepper.setAcceleration(manualSpeedMicroStepsPerSecondsPerSeconds);
+				
+				for (int i = 0; i< singleCycleRepetition; i++)
+				{
+
+					// Single cycle stepper movement
+					//------------------------------
+					singleCyleMovement(halfAmplitudeMicroSteps, manual_MicroStepsPerSeconds);
+
+				}
+
+				
+				// Here we should be where we started: at the center, ready to start an oscillation again
+
+			}
+			else if(stepper.currentPosition () != 0)
+			{
+				Serial.println("Oups, looks like we didn't stop on the center of the rail, centering");
+				moveTableToCenter(); // You need to have enabled the stepper BEFORE
+			}
+			else
+			{
+				delay(1);
+			}
+			
 			break;
+
+    //-----------------------------------------------------------------------------------    
 		case MODE_SCENARIO :
 			// check if a scenario is not already running
 			if (executingScenario == false)
 			{
 				Serial.println("Starting a new Scenario");
+
+
+        Serial.println("Let's check if the table is centered");        
+        if(stepper.currentPosition () != 0)
+        {
+          Serial.println("Oups, looks like we didn't stop on the center of the rail, centering now");
+          moveTableToCenter(); // You need to have enabled the stepper BEFORE
+        }
+
+				// <DEBUG> <PLACEHOLDER>
 			}
 			else // Then you can start a new scenario
 			{
 				Serial.print("Starting a new scenario...");
 				executingScenario = true;
 				Serial.println("done");
-				
+				// <DEBUG> <PLACEHOLDER>
 			}
 
 			break;
 			default :
 			Serial.println("Impossible mode selected, it must be either Manual or Scenario");
-		}
-
-	}
-
-	
-
-
-
-	// Check if we are in manual or scenario mode
-	//--------------------------------------------
-	// Single cycle stepper movement
-	//------------------------------
-
-	// if there are no errors then we can continue and do the movement. This is a BLOCKING call
-
+		}// END SWITCH manual/scenario
+	} // if abort movement is false
+	else
 	{
-		// Set the maximum allowed speed for manual control (idenpendant of what can be set by the trimpots 
-		stepper.setMaxSpeed(manualSpeedMicroStepsPerSeconds);
-		stepper.setAcceleration(manualSpeedMicroStepsPerSecondsPerSeconds);
-		// Serial.printf("Current mode: %d | %d\r\n", digitalRead(PIN_TOGGLE_MODE), MODE_MANUAL); 
-
-		// Convert trimpot values to stepper parameters
-		//----------------------------------------------
-		long 	halfAmplitudeMicroSteps 		  = (long)(0.5 * (current_trimpotAmplitude_filtered * ustepsPerMM_calib)); 
-		float manual_MicroStepsPerSeconds 	= (float)( (float)halfAmplitudeMicroSteps * 2 * current_trimpotFrequency_filtered);
-
-		// Before executing a movement, check that the orders from the trimpots make sense, ie > 0?
-		if ( (halfAmplitudeMicroSteps > ((long)0)) && (manual_MicroStepsPerSeconds > 0.0) )
-		{
-			Serial.printf("Current trimpot values: %f | %f\r\n", current_trimpotAmplitude_filtered, current_trimpotFrequency_filtered);
-			Serial.printf("Current user manual settings: %lu | %f\r\n", halfAmplitudeMicroSteps, manual_MicroStepsPerSeconds);
-			
-			for (int i = 0; i< singleCycleRepetition; i++)
-			{
-				// 1st movement -1/2
-				//-------------------
-				stepper.move( (long)(-1 * halfAmplitudeMicroSteps) );
-				stepper.setSpeed( ((stepper.distanceToGo() > 0) ? +1.0 : -1.0)  * manual_MicroStepsPerSeconds);
-				while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
-				{
-					stepper.run();
-				}
-
-				// 2nd movement +1 
-				//-------------------
-				stepper.move( (long)(+2 * halfAmplitudeMicroSteps) );
-				stepper.setSpeed( ((stepper.distanceToGo() > 0) ? +1.0 : -1.0)  * manual_MicroStepsPerSeconds);
-				while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
-				{
-					stepper.run();
-				}
-				
-
-				// 3rd movement -1/2
-				//-------------------
-				stepper.move( (long)(-1 * halfAmplitudeMicroSteps) );
-				stepper.setSpeed( ((stepper.distanceToGo() > 0) ? +1.0 : -1.0)  * manual_MicroStepsPerSeconds);
-				while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
-				{
-					stepper.run();
-				}
-
-			}
-
-			
-			// Here we should be where we started: at the center, ready to start an oscillation again
-
-		}
-		else if(stepper.currentPosition () != 0)
-		{
-			Serial.println("Oups, looks like we didn't stop on the center of the rail, centering");
-			moveTableToCenter(); // You need to have enabled the stepper BEFORE
-		}
-		else
-		{
-			delay(1);
-		}
+		// If there has been an error, make sure a scenario restart at the its beginning
+		executingScenario = false;
 	}
-}
+}// END OF THE LOOP
 
 
 // END OF THE FILE
