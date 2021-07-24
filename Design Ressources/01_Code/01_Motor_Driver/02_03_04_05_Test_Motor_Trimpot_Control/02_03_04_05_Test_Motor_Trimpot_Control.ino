@@ -114,13 +114,13 @@ void setup()
 	// ISRs
 	// ----
 	attachISRs ();
-	enableTrimpots(false); // Disable the trimpot's timer, we will renable them @ the end of the setup
+	enableTrimpots(false); // Disable the trimpot's timer, we will enable them only @ the end of the setup
 
 	// Setting some variables
 	// ----------------------
 	abortMovement            = false;       
-	calibrationSuccess       = false;      // A variable that tells if the calibration was sucessful
-	needCalibration          = true;       // Indicates if there is a current good distance calibration done
+	calibrationSuccess       = false;
+	needCalibration          = true;
 
 
 	Serial.println("Make sure the manual \"stepper enable\" toggle switch on the front panel is set to the \"ENABLED\" ");
@@ -134,7 +134,7 @@ void setup()
 
 	Serial.println("---------------------------------");
 
-	// Usually here you would do the stepper distance calibration but this sketch has not been tested yest as of today (21/07/2021)
+	// Usually here you would do the stepper distance calibration but this sketch has not been tested yet as of today (21/07/2021)
 	calibrateStepper(); // You need to have enabled the stepper BEFORE
 
 	Serial.println("---------------------------------");
@@ -145,16 +145,18 @@ void setup()
 
 	Serial.println("---------------------------------");
 
-	// if there are no errors then we can continue ther setup
+	// if there are NO errors then we can continue the setup
 	if (abortMovement == false)
 	{
-	   /*
+		/*
 		* Make sure the mode recorded in this SW is 
 		* the same as the one on the physical toggle switch 
 		*/
 
 		displayStepperSettings();
+		
 		Serial.println("---------------------------------"); // Indicates the end of the setup
+		
 		enableTrimpots(digitalRead(PIN_TOGGLE_MODE)); 
 	}
 }
@@ -172,52 +174,36 @@ void loop()
 
 	// Checking the flag of some ISRs [3]: LS and Mode select
 	//---------------------------------------------------------
+	checkISRFlags();
 	
+	if (abortMovement == false) // the 1rst check of this variable out of many more
+	{
+		switch(digitalRead(PIN_TOGGLE_MODE))
+		{
+		case MODE_MANUAL :
+			break;
+		case MODE_SCENARIO :
+			// check if a scenario is not already running
+			if (executingScenario == false)
+			{
+				Serial.println("Starting a new Scenario");
+			}
+			else // Then you can start a new scenario
+			{
+				Serial.print("Starting a new scenario...");
+				executingScenario = true;
+				Serial.println("done");
+				
+			}
+
+			break;
+			default :
+			Serial.println("Impossible mode selected, it must be either Manual or Scenario");
+		}
+
+	}
+
 	
-	if ( (flagLS_r == true) || (flagLS_l == true) )
-	{
-		if (flagLS_r)
-		{
-			flagLS_r = false;
-			Serial.printf("RIGHT Limit Switch ISR triggered %d, current status: %d\r\n", millis(), stateLS_r);
-		}
-		if (flagLS_l)
-		{
-			flagLS_l = false;
-			Serial.printf("LEFT Limit Switch ISR triggered %d, current status: %d\r\n", millis(), stateLS_l);
-		}
-	}
-
-	if (abortMovement == false)
-	{
-
-	}
-
-	if( trimpotFlag )
-	{
-		trimpotFlag = false;// reset the flag 
-		readTrimpots();
-	}
-
-	switch(digitalRead(PIN_TOGGLE_MODE))
-	{
-	case MODE_MANUAL :
-		break;
-	case MODE_SCENARIO :
-		// check if a scenario is not already running
-		if (executingScenario == false)
-		{
-			Serial.println("Starting a new Scenario");
-		}
-		else // Then you can start a new scenario
-		{
-			Serial.println("Starting a new Scenario");
-		}
-
-		break;
-		default :
-		Serial.println("Impossible Mode selected, it must be either Manual or Scenario");
-	}
 
 
 

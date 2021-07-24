@@ -102,5 +102,6 @@ const float   scenarioSpeedMicroStepsPerSeconds           = max_allowedMicroStep
 AccelStepper stepper(AccelStepper::DRIVER, PIN_MOTOR_STEP, PIN_MOTOR_DIR);
 
 // boolean states
+bool abortMovement = false;
 
 // END OF THE FILE
