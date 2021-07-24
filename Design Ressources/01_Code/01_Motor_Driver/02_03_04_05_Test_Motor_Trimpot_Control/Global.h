@@ -75,7 +75,7 @@ void      moveTableToCenter       (void);
 void      calibrateStepper        (void);
 void      printStepperState       (void);
 void      checkISRFlags           (void);
-void 	  singleCyleMovement(long  halfAmplitudeMicroSteps, float manual_MicroStepsPerSeconds)
+void 	    singleCyleMovement(long  halfAmplitudeMicroSteps, float manual_MicroStepsPerSeconds)
 
 
 
@@ -90,27 +90,36 @@ void LS_r_ISR()
 	// If interrupts come faster than LS_DEBOUNCE_TIME, assume it's a bounce and ignore
 	if (interrupt_time - last_interrupt_time_ls_r > LS_DEBOUNCE_TIME)
 	{
-		flagLS_r = true;
-		digitalWrite(LED_BUILTIN, digitalRead(PIN_LIMIT_RIGHT));
-		if(digitalRead(PIN_LIMIT_RIGHT))
+		flagLS_r = true; // This indicates a change
+    stateLS_r = digitalRead(PIN_LIMIT_RIGHT); // This is a SATE, not a FLAG!, the signal should be stable enough to read from the pin directly
+		
+    if(stateLS_r)
 		{
 			enableStepper(executingCalib); // disable the stepper only if NOT in calibration
-			enableTrimpots(false);
-			
-			//Change some states and some flags
-			//--------------------------------
-			needCalibration           = true;       // Indicates if there is a current good distance calibration done
-			executingCalib            = false;      // Indicates if we are currently in distance calibration with the Limit Switches
-			calibrationSuccess        = false;      // A variable that tells if the calibration was sucessful
-			abortMovement             = true;
-			stateLS_r = true;
+      
+      // We distinguish 2 cases: in calibration (we expect a LS trigger) and NOT in calibration (no LS trigger expected)
+      if(executingCalib)
+      {
+        // <DEBUG> <DO we have to have this?>
+      }
+      else
+      {
+
+        enableTrimpots(false);
+
+        //Change some states and some flags
+        //--------------------------------
+        needCalibration           = true;       // Indicates if there is a current good distance calibration done
+        executingCalib            = false;      // Indicates if we are currently in distance calibration with the Limit Switches
+        calibrationSuccess        = false;      // A variable that tells if the calibration was sucessful
+        abortMovement             = true;
+      }
+      
+      //if there is a need for restart: asm volatile ("  jmp 0");
 		}
-		else
+		else // here is the detrigger
 		{
-			//enableStepper(false);
-			//enableTrimpots(true); // enable back only if in Manual
 			abortMovement = false;
-			stateLS_r     = false;
 		}
 		last_interrupt_time_ls_r = interrupt_time;
 	}
@@ -126,27 +135,36 @@ void LS_l_ISR()
 	// If interrupts come faster than LS_DEBOUNCE_TIME, assume it's a bounce and ignore
 	if (interrupt_time - last_interrupt_time_ls_l > LS_DEBOUNCE_TIME)
 	{
-		flagLS_l = true;
-		digitalWrite(LED_BUILTIN, digitalRead(PIN_LIMIT_LEFT));
-		if(digitalRead(PIN_LIMIT_LEFT))
+		flagLS_l = true; // This indicates a change
+    stateLS_l = digitalRead(PIN_LIMIT_LEFT); // This is a SATE, not a FLAG!, the signal should be stable enough to read from the pin directly
+		
+    if(stateLS_l)
 		{
-			enableStepper (executingCalib); // disable the stepper only if NOT in calibration
-			enableTrimpots(false);
-			
-			//Change some states and some flags
-			//--------------------------------
-			needCalibration           = true;       // Indicates if there is a current good distance calibration done
-			executingCalib            = false;      // Indicates if we are currently in distance calibration with the Limit Switches
-			calibrationSuccess        = false;      // A variable that tells if the calibration was sucessful
-			abortMovement = true;
-			stateLS_l = true;
+			enableStepper(executingCalib); // disable the stepper only if NOT in calibration
+      
+      // We distinguish 2 cases: in calibration (we expect a LS trigger) and NOT in calibration (no LS trigger expected)
+      if(executingCalib)
+      {
+        // <DEBUG> <DO we have to have this?>
+      }
+      else
+      {
+
+        enableTrimpots(false);
+
+        //Change some states and some flags
+        //--------------------------------
+        needCalibration           = true;       // Indicates if there is a current good distance calibration done
+        executingCalib            = false;      // Indicates if we are currently in distance calibration with the Limit Switches
+        calibrationSuccess        = false;      // A variable that tells if the calibration was sucessful
+        abortMovement             = true;
+      }
+      
+      //if there is a need for restart: asm volatile ("  jmp 0");
 		}
-		else
+		else // here is the detrigger
 		{
-			//enableStepper(false);
-			stateLS_l = false;
-			//enableTrimpots(true); // enable back only if in Manual <-- This triggers and a timer interrupt, MUST be LAST
-			
+			abortMovement = false;
 		}
 		last_interrupt_time_ls_l = interrupt_time;
 	}
@@ -255,6 +273,10 @@ void attachISRs (void)
 */
 	attachInterrupt(digitalPinToInterrupt(PIN_LIMIT_RIGHT), LS_r_ISR, CHANGE);
 	attachInterrupt(digitalPinToInterrupt(PIN_LIMIT_LEFT), LS_l_ISR, CHANGE);
+
+  // Reset the time when the last LS interrupt was triggered (reference)
+  last_interrupt_time_ls_r = millis();
+  last_interrupt_time_ls_l = millis();
 
 	// To trigger an action when the toggle switch associated with the mode selection (Manual/Scenario)
 	attachInterrupt(digitalPinToInterrupt(PIN_TOGGLE_MODE), toggleSwitchModeISR, CHANGE); //toggleSwitchModeISR

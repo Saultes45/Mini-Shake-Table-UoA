@@ -113,7 +113,7 @@ void setup()
 
 	// ISRs
 	// ----
-	attachISRs ();
+	attachISRs();
 	enableTrimpots(false); // Disable the trimpot's timer, we will enable them only @ the end of the setup
 
 	// Setting some variables
@@ -192,7 +192,7 @@ void loop()
 			float manual_MicroStepsPerSeconds   = (float)( (float)halfAmplitudeMicroSteps * 2 * current_trimpotFrequency_filtered);
 
 
-			// Before executing a movement, check that the orders from the trimpots make sense, ie > 0?
+			// Before executing a movement, check that the orders from the trimpots make sense, i.e. > 0?
 			if ( (halfAmplitudeMicroSteps > ((long)0)) && (manual_MicroStepsPerSeconds > 0.0) )
 			{
 				Serial.printf("Current trimpots %f \t %f \t manual settings: %lu \t %f\r\n", current_trimpotAmplitude_filtered, current_trimpotFrequency_filtered, halfAmplitudeMicroSteps, manual_MicroStepsPerSeconds);
@@ -201,7 +201,7 @@ void loop()
 				stepper.setMaxSpeed(manualSpeedMicroStepsPerSeconds);
 				stepper.setAcceleration(manualSpeedMicroStepsPerSecondsPerSeconds);
 				
-				for (int i = 0; i< singleCycleRepetition; i++)
+				for (int i = 0; i < singleCycleRepetition; i++)
 				{
 
 					// Single cycle stepper movement
@@ -211,17 +211,17 @@ void loop()
 				}
 
 				
-				// Here we should be where we started: at the center, ready to start an oscillation again
+				// Here we should be where we started: @ the center, ready to start an oscillation again
 
 			}
 			else if(stepper.currentPosition () != 0)
 			{
-				Serial.println("Oups, looks like we didn't stop on the center of the rail, centering");
+				Serial.println("Oups, looks like we didn't stop on the center of the rail, centering now");
 				moveTableToCenter(); // You need to have enabled the stepper BEFORE
 			}
 			else
 			{
-				delay(1);
+				delay(1); // wait a bit for another action from the usr like >0 trimpots or mode change 
 			}
 			
 			break;
@@ -234,12 +234,48 @@ void loop()
 				Serial.println("Starting a new Scenario");
 
 
-        Serial.println("Let's check if the table is centered");        
+        Serial.println("Let's check if the table is centered");
         if(stepper.currentPosition () != 0)
         {
           Serial.println("Oups, looks like we didn't stop on the center of the rail, centering now");
           moveTableToCenter(); // You need to have enabled the stepper BEFORE
         }
+
+        Serial.print("cleaning previous scenario data...");
+        memset (scenarioSteps, (long)0 ,    nbr_movementsScenario);
+        memset (scenarioSpeed, (float)0.0 , nbr_movementsScenario);
+        Serial.println("done");
+
+        Serial.print("Loading scenario data...");
+        scenarioSteps[0] = +200;
+        scenarioSteps[1] = -200;
+        scenarioSteps[2] = +200;
+        scenarioSteps[3] = -100;
+        scenarioSteps[4] = +100;
+        scenarioSteps[5] = +50;
+        scenarioSteps[6] = -25;
+        scenarioSteps[7] = +25;
+        scenarioSteps[8] = -200;
+        scenarioSteps[9] = +200;
+
+
+        scenarioSpeed[0] = +250.0;
+        scenarioSpeed[1] = -10000.0;
+        scenarioSpeed[2] = +10000.0;
+        scenarioSpeed[3] = -10000.0;
+        scenarioSpeed[4] = +10000.0;
+        scenarioSpeed[5] = +10000.0;
+        scenarioSpeed[6] = -10000.0;
+        scenarioSpeed[7] = +1000.0;
+        scenarioSpeed[8] = -500.0;
+        scenarioSpeed[9] = +25.0;
+        Serial.println("done");
+
+        // Set the maximum allowed speed for manual control (idenpendant of what can be set by the trimpots
+        Serial.print("Setting the maximum allowed speed for scenario settings..."); 
+				stepper.setMaxSpeed(manualSpeedMicroStepsPerSeconds);
+				stepper.setAcceleration(manualSpeedMicroStepsPerSecondsPerSeconds);
+        Serial.println("done");
 
 				// <DEBUG> <PLACEHOLDER>
 			}

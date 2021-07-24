@@ -69,9 +69,9 @@ const long    microstepsPerRevolution                   = microSteppingFactorLis
 // Local Scenario
 //----------------
 const int   nbr_movementsScenario                 = 10; // This variable is const because it defuines the size of the memory we can allocate to scenario parameters
-      long  scenarioSteps[nbr_movementsScenario]  = {0};
-      float scenarioSpeed[nbr_movementsScenario]  = {0.0};
-      bool  abortScenario                         = true; // a variable that store potential reason to stop a scenario
+long  scenarioSteps[nbr_movementsScenario]  = {0};
+float scenarioSpeed[nbr_movementsScenario]  = {0.0};
+bool  abortScenario                         = true; // a variable that store potential reason to stop a scenario
 
 
  
