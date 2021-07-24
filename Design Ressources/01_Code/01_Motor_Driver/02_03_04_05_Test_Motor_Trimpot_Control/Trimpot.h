@@ -55,7 +55,7 @@
 const uint8_t PIN_TRMPT_FREQ            = A0; // Analog input 3.3V
 const uint8_t PIN_TRMPT_AMPL            = A1; // Analog input 3.3V
 const uint32_t FREQUENCY_READ_TRIMPOTS  = 10000; // in [Hz] 1000
-const uint16_t NBR_SAMPLES_MEDIAN       = 50;
+const uint16_t NBR_SAMPLES_MEDIAN       = 10; //50
 const float XIAO_ADC_MAX_LSB            = 1023.0; // <<--- This MUST be a float!!!!!
 
 // Trimpots deadbands ([LSB] or [V] or [frequency]) -> LSB

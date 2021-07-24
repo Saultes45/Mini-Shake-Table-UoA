@@ -33,7 +33,8 @@
 
 // -------------------------- Defines --------------------------
 // Boolean states
-bool    executingScenario           = false;      // Indicates if we are currently in distance calibration with the Limit Switches
+bool    executingScenario   = false;      // Indicates if we are currently in distance calibration with the Limit Switches
+bool    needScenario        = false;      // Indicates if the controller need to run a scenario
 
 // Local Scenario
 //----------------

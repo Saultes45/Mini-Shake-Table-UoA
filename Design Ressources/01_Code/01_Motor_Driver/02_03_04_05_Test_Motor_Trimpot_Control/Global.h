@@ -75,7 +75,7 @@ void      moveTableToCenter       (void);
 void      calibrateStepper        (void);
 void      printStepperState       (void);
 void      checkISRFlags           (void);
-void 	    singleCyleMovement(long  halfAmplitudeMicroSteps, float manual_MicroStepsPerSeconds)
+void 	    singleCyleMovement(long  halfAmplitudeMicroSteps, float manual_MicroStepsPerSeconds);
 
 
 
@@ -193,6 +193,7 @@ void toggleSwitchModeISR()
 			//  timer interrupt to stop reading the trimpots
 			enableTrimpots(false);
 			// And set a flag to ask to execute a scenario
+      needScenario = true;
 		}
 		
 	}

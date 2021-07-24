@@ -183,7 +183,8 @@ void loop()
 		switch(digitalRead(PIN_TOGGLE_MODE))
 		{
       //-----------------------------------------------------------------------------------
-		case MODE_MANUAL :
+		case MODE_MANUAL:
+   {
 
 			
 			// Convert trimpot values to stepper parameters
@@ -225,13 +226,18 @@ void loop()
 			}
 			
 			break;
+   }
 
     //-----------------------------------------------------------------------------------    
-		case MODE_SCENARIO :
+		case MODE_SCENARIO:
+   {
 			// check if a scenario is not already running
-			if (executingScenario == false)
+			if ( not(executingScenario) && needScenario )
 			{
-				Serial.println("Starting a new Scenario");
+
+        needScenario = false; // reset the flag
+        
+				Serial.println("Starting a new scenario");
 
 
         Serial.println("Let's check if the table is centered");
@@ -258,17 +264,17 @@ void loop()
         scenarioSteps[8] = -200;
         scenarioSteps[9] = +200;
 
-
-        scenarioSpeed[0] = +250.0;
-        scenarioSpeed[1] = -10000.0;
-        scenarioSpeed[2] = +10000.0;
-        scenarioSpeed[3] = -10000.0;
-        scenarioSpeed[4] = +10000.0;
-        scenarioSpeed[5] = +10000.0;
-        scenarioSpeed[6] = -10000.0;
-        scenarioSpeed[7] = +1000.0;
-        scenarioSpeed[8] = -500.0;
-        scenarioSpeed[9] = +25.0;
+        // Speeds must all be > 0
+        scenarioSpeed[0] = 250.0;
+        scenarioSpeed[1] = 1000.0;
+        scenarioSpeed[2] = 1000.0;
+        scenarioSpeed[3] = 1000.0;
+        scenarioSpeed[4] = 1000.0;
+        scenarioSpeed[5] = 1000.0;
+        scenarioSpeed[6] = 1000.0;
+        scenarioSpeed[7] = 1000.0;
+        scenarioSpeed[8] = 500.0;
+        scenarioSpeed[9] = 25.0;
         Serial.println("done");
 
         // Set the maximum allowed speed for manual control (idenpendant of what can be set by the trimpots
@@ -277,19 +283,36 @@ void loop()
 				stepper.setAcceleration(manualSpeedMicroStepsPerSecondsPerSeconds);
         Serial.println("done");
 
-				// <DEBUG> <PLACEHOLDER>
+        executingScenario = true; // setting the boolean for the next iteration
+
 			}
-			else // Then you can start a new scenario
+			else // Then you execute the scenario that has been prepared
 			{
-				Serial.print("Starting a new scenario...");
-				executingScenario = true;
-				Serial.println("done");
-				// <DEBUG> <PLACEHOLDER>
+				Serial.println("Executing the previously set scenario");
+				
+				for (int cnt_scenarioMovements = 0 ; cnt_scenarioMovements < nbr_movementsScenario; cnt_scenarioMovements++)
+        {
+          stepper.move(scenarioSteps[cnt_scenarioMovements]);
+          stepper.setSpeed(((stepper.distanceToGo() > 0) ? +1.0 : -1.0) * scenarioSpeed[cnt_scenarioMovements]); // Order matters!!!! 1->speed 2->steps
+          
+          while ( (stepper.distanceToGo() != 0) && (abortMovement == false) && (digitalRead(PIN_TOGGLE_MODE) == MODE_SCENARIO) )
+          {
+            stepper.runSpeed();
+          }
+        }
+				
+				
+				executingScenario = false; // reset the boolean
+				Serial.println("Scenario done");
 			}
 
 			break;
-			default :
+   }
+			default:
+      {
 			Serial.println("Impossible mode selected, it must be either Manual or Scenario");
+//     break;
+      }
 		}// END SWITCH manual/scenario
 	} // if abort movement is false
 	else
