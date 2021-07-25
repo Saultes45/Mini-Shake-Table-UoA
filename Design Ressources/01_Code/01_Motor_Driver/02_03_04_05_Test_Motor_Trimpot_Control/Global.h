@@ -104,6 +104,7 @@ void LS_r_ISR()
       }
       else
       {
+        stepper.stop(); // Although the motor is now disabled, the uController doesn't know that and continues to generate pulses
 
         enableTrimpots(false);
 
@@ -149,6 +150,7 @@ void LS_l_ISR()
       }
       else
       {
+        stepper.stop(); // Although the motor is now disabled, the uController doesn't know that and continues to generate pulses
 
         enableTrimpots(false);
 
@@ -388,25 +390,33 @@ void displayStepperSettings(void)
 void  moveTableToCenter   (void)
 {
 
-#ifdef SERIAL_VERBOSE
-	Serial.println("Function moveTableToCenter called. For this to work, the stepper must be ALREADY enabled");
-	Serial.printf("Moving table back to the center position: %ld [mm] ... ", (long)(distanceBetweenLS_MM/2.0 * ustepsPerMM_calib));
-#endif
+  #ifdef SERIAL_VERBOSE
+    Serial.println("Function moveTableToCenter called. For this to work, the stepper must be ALREADY enabled");
+    Serial.printf("Moving table back to the center position: %ld [mm] ... ", (long)(distanceBetweenLS_MM/2.0 * ustepsPerMM_calib));
+  #endif
 
-	stepper.setMaxSpeed(centeringSpeedMicroStepsPerSeconds_max);
-	stepper.setAcceleration(centeringSpeedMicroStepsPerSecondsPerSeconds);
-	stepper.moveTo( (long)(0) );
-	//stepper.setSpeed(((stepper.distanceToGo() > 0) ? +1.0 : -1.0) * centeringSpeedMicroStepsPerSeconds_normal);
-	// printStepperState();
-	while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
-	{
-		//stepper.runSpeed();
-		stepper.run();
-	}
+  if (abortMovement == false)
+  {
+    stepper.setMaxSpeed(centeringSpeedMicroStepsPerSeconds_max);
+    stepper.setAcceleration(centeringSpeedMicroStepsPerSecondsPerSeconds);
+    stepper.moveTo( (long)(0) );
+    //stepper.setSpeed(((stepper.distanceToGo() > 0) ? +1.0 : -1.0) * centeringSpeedMicroStepsPerSeconds_normal);
+    // printStepperState();
+    while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+    {
+      //stepper.runSpeed();
+      stepper.run();
+    }
 
-#ifdef SERIAL_VERBOSE
-	Serial.println("done");
-#endif
+    #ifdef SERIAL_VERBOSE
+      Serial.println("done");
+    #endif
+
+  }//abortMovement
+  else
+  {
+    Serial.println("Aborting because \"abortMovement\" is set");
+  }
 
 }// END OF THE FUNCTION
 
@@ -415,15 +425,23 @@ void  calibrateStepper (void) // <TODO> This is currently a placeholder, use the
 {
 
 	/* Theory of operation:
-* Wherever the motor is NOW, move right until the RIGHT LS is triggerd (or timeout), if the LFT one triggers, ABORT
-* This is the START position.
-* Move to the the LEFT until (timeout) or LEFT LS triggers, if the LFT one triggers, ABORT
-*/
+  * Wherever the motor is NOW, move right until the RIGHT LS is triggerd (or timeout), if the LFT one triggers, ABORT
+  * This is the START position.
+  * Move to the the LEFT until (timeout) or LEFT LS triggers, if the LFT one triggers, ABORT
+  */
 
-#ifdef SERIAL_VERBOSE
-	Serial.println("Function calibrateStepper called. For this to work, the stepper must be ALREADY enabled");
-	Serial.print("Starting calibration...");
-#endif
+  #ifdef SERIAL_VERBOSE
+    Serial.println("Function calibrateStepper called. For this to work, the stepper must be ALREADY enabled");
+  #endif
+
+if ( (needCalibration == true) && (abortMovement == false) )
+{
+  executingCalib = true; // set the boolean state
+
+  #ifdef SERIAL_VERBOSE
+    Serial.print("Starting calibration...");
+  #endif
+
 
 	// Let's move to the RIGHT: RELATIVE
 	stepper.setMaxSpeed(calibrationSpeedMicroStepsPerSeconds_max);
@@ -481,6 +499,12 @@ void  calibrateStepper (void) // <TODO> This is currently a placeholder, use the
 		Serial.println("Calibration failed, try again");
 		#endif
 	}
+
+  executingCalib = false; // reset the boolean state
+
+}
+  
+
 }// END OF THE FUNCTION
 
 //******************************************************************************************
@@ -606,31 +630,42 @@ void singleCyleMovement(long  halfAmplitudeMicroSteps, float manual_MicroStepsPe
 {
 	// 1st movement -1/2
 	//-------------------
-	stepper.move( (long)(-1 * halfAmplitudeMicroSteps) );
-	stepper.setSpeed( ((stepper.distanceToGo() > 0) ? +1.0 : -1.0)  * manual_MicroStepsPerSeconds);
-	while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
-	{
-		stepper.run();
-	}
+  if (abortMovement == false) 
+  {
+    stepper.move( (long)(-1 * halfAmplitudeMicroSteps) );
+    stepper.setSpeed( ((stepper.distanceToGo() > 0) ? +1.0 : -1.0)  * manual_MicroStepsPerSeconds);
+    while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+    {
+      stepper.run();
+    }
+  }
+
 
 	// 2nd movement +1
 	//-------------------
-	stepper.move( (long)(+2 * halfAmplitudeMicroSteps) );
-	stepper.setSpeed( ((stepper.distanceToGo() > 0) ? +1.0 : -1.0)  * manual_MicroStepsPerSeconds);
-	while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
-	{
-		stepper.run();
-	}
+  if (abortMovement == false) 
+  {
+    stepper.move( (long)(+2 * halfAmplitudeMicroSteps) );
+    stepper.setSpeed( ((stepper.distanceToGo() > 0) ? +1.0 : -1.0)  * manual_MicroStepsPerSeconds);
+    while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+    {
+      stepper.run();
+    }
+  }
+
 	
 
 	// 3rd movement -1/2
 	//-------------------
-	stepper.move( (long)(-1 * halfAmplitudeMicroSteps) );
-	stepper.setSpeed( ((stepper.distanceToGo() > 0) ? +1.0 : -1.0)  * manual_MicroStepsPerSeconds);
-	while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
-	{
-		stepper.run();
-	}
+  if (abortMovement == false) 
+  {
+    stepper.move( (long)(-1 * halfAmplitudeMicroSteps) );
+    stepper.setSpeed( ((stepper.distanceToGo() > 0) ? +1.0 : -1.0)  * manual_MicroStepsPerSeconds);
+    while ((stepper.distanceToGo() != 0) && (abortMovement == false) )
+    {
+      stepper.run();
+    }
+  }
 	
 }// END OF THE FUNCTION
 

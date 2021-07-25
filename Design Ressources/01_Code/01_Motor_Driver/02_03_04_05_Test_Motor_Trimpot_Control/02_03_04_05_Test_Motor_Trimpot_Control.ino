@@ -139,6 +139,7 @@ void setup()
 	Serial.println("---------------------------------");
 
 	// Move the shake table back to the center to execute the movement of the trimpots
+  delay(5000); // This is to be able to tell the difference between fake calibration and move to center
 	moveTableToCenter(); // You need to have enabled the stepper BEFORE
 	Serial.println("The shake table should be centered now. You are ready to go!"); 
 
@@ -184,9 +185,8 @@ void loop()
 		{
       //-----------------------------------------------------------------------------------
 		case MODE_MANUAL:
-   {
+    {
 
-			
 			// Convert trimpot values to stepper parameters
 			//----------------------------------------------
 			long  halfAmplitudeMicroSteps       = (long)(0.5 * (current_trimpotAmplitude_filtered * ustepsPerMM_calib)); 
@@ -230,7 +230,7 @@ void loop()
 
     //-----------------------------------------------------------------------------------    
 		case MODE_SCENARIO:
-   {
+    {
 			// check if a scenario is not already running
 			if ( not(executingScenario) && needScenario )
 			{
@@ -267,12 +267,12 @@ void loop()
         // Speeds must all be > 0
         scenarioSpeed[0] = 250.0;
         scenarioSpeed[1] = 1000.0;
-        scenarioSpeed[2] = 1000.0;
-        scenarioSpeed[3] = 1000.0;
-        scenarioSpeed[4] = 1000.0;
+        scenarioSpeed[2] = 850.0;
+        scenarioSpeed[3] = 360.0;
+        scenarioSpeed[4] = 400.0;
         scenarioSpeed[5] = 1000.0;
-        scenarioSpeed[6] = 1000.0;
-        scenarioSpeed[7] = 1000.0;
+        scenarioSpeed[6] = 900.0;
+        scenarioSpeed[7] = 914.0;
         scenarioSpeed[8] = 500.0;
         scenarioSpeed[9] = 25.0;
         Serial.println("done");
@@ -286,11 +286,20 @@ void loop()
         executingScenario = true; // setting the boolean for the next iteration
 
 			}
-			else // Then you execute the scenario that has been prepared
+			else if ( (executingScenario) && not(needScenario) )// Then you execute the scenario that has been prepared
 			{
-				Serial.println("Executing the previously set scenario");
+				Serial.print("Executing the previously set scenario in ... ");
+
+        for (int cnt_wait = 5; cnt_wait > 0; cnt_wait--)
+        {
+          Serial.printf("%d ... ", cnt_wait);
+          delay(1000);
+        }
+        Serial.println();
+        Serial.println("And here ... we ... go");
 				
-				for (int cnt_scenarioMovements = 0 ; cnt_scenarioMovements < nbr_movementsScenario; cnt_scenarioMovements++)
+        int cnt_scenarioMovements = 0;
+				while ( (cnt_scenarioMovements < nbr_movementsScenario) && (abortMovement == false) && (digitalRead(PIN_TOGGLE_MODE) == MODE_SCENARIO) )
         {
           stepper.move(scenarioSteps[cnt_scenarioMovements]);
           stepper.setSpeed(((stepper.distanceToGo() > 0) ? +1.0 : -1.0) * scenarioSpeed[cnt_scenarioMovements]); // Order matters!!!! 1->speed 2->steps
@@ -299,11 +308,21 @@ void loop()
           {
             stepper.runSpeed();
           }
+          cnt_scenarioMovements++;
         }
 				
 				
 				executingScenario = false; // reset the boolean
 				Serial.println("Scenario done");
+
+        delay(5000); //waiting before centering the table
+        
+        Serial.println("Let's check if the table is centered");
+        if( (stepper.currentPosition () != 0) && (abortMovement == false) )
+        {
+          Serial.println("Oups, looks like we didn't stop on the center of the rail, centering now");
+          moveTableToCenter(); // You need to have enabled the stepper BEFORE
+        }
 			}
 
 			break;
