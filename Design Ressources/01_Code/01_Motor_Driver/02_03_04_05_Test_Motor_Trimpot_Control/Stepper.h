@@ -71,7 +71,9 @@ const float   max_allowedMicroStepsPerSecondsPerSeconds   = 84000.0 * 3.5; // ma
 //const float   calibrationSpeedMicroStepsPerSecondsPerSeconds = 500.0;
 const float   calibrationSpeedMicroStepsPerSeconds_max          = 100.0;
 const float   calibrationSpeedMicroStepsPerSeconds_normal       = 100.0;
-const long    calibrationExplorationMicroSteps                  = 10;
+const long    calibrationExplorationMicroSteps                  = 10; // <DEBUG> too low
+const long    detriggeringExplorationMicroSteps                 = 50;
+
 
 // Mode 2 - Centering - acceleration, slow speed
 //const float   centeringSpeedMicroStepsPerSecondsPerSeconds = 500.0;

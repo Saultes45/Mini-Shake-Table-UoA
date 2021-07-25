@@ -65,7 +65,7 @@ const uint16_t MS_DEBOUNCE_TIME         = 50;      // mode switch button debounc
 volatile bool           flagMode            = false;
 volatile unsigned long  last_interrupt_time = 0;
 
-// -------------------------- Functions declaration [11] --------------------------
+// -------------------------- Functions declaration [13] --------------------------
 void      pinSetUp                (void);
 void      attachISRs              (void);
 void      enableTrimpots          (bool enableOrder);
@@ -75,7 +75,11 @@ void      moveTableToCenter       (void);
 void      calibrateStepper        (void);
 void      printStepperState       (void);
 void      checkISRFlags           (void);
-void 	    singleCyleMovement(long  halfAmplitudeMicroSteps, float manual_MicroStepsPerSeconds);
+void 	    singleCyleMovement      (long halfAmplitudeMicroSteps, float manual_MicroStepsPerSeconds);
+void      readTrimpots            (void);
+void      prepareScenario         (void);
+void      executeScenario         (void);
+
 
 
 
@@ -118,10 +122,10 @@ void LS_r_ISR()
       
       //if there is a need for restart: asm volatile ("  jmp 0");
 		}
-		else // here is the detrigger
-		{
-			abortMovement = false;
-		}
+		// else // here is the detrigger
+		// {
+		// 	abortMovement = false;
+		// }
 		last_interrupt_time_ls_r = interrupt_time;
 	}
 
@@ -164,10 +168,10 @@ void LS_l_ISR()
       
       //if there is a need for restart: asm volatile ("  jmp 0");
 		}
-		else // here is the detrigger
-		{
-			abortMovement = false;
-		}
+		// else // here is the detrigger
+		// {
+		// 	abortMovement = false;
+		// }
 		last_interrupt_time_ls_l = interrupt_time;
 	}
 
@@ -183,11 +187,14 @@ void toggleSwitchModeISR()
 	if (interrupt_time - last_interrupt_time > MS_DEBOUNCE_TIME)
 	{
 		//flagMode = true;
+    needScenario  		  = false;
+    executingScenario 	= false;
 
 		if (digitalRead(PIN_TOGGLE_MODE) == MODE_MANUAL)
 		{
 			// If we are in Manual, then attach the timer interrupt to read the trimpots
 			enableTrimpots(true);
+      
 		}
 		else
 		{
@@ -434,37 +441,88 @@ void  calibrateStepper (void) // <TODO> This is currently a placeholder, use the
     Serial.println("Function calibrateStepper called. For this to work, the stepper must be ALREADY enabled");
   #endif
 
-if ( (needCalibration == true) && (abortMovement == false) )
-{
-  executingCalib = true; // set the boolean state
+  if ( (needCalibration == true) && (abortMovement == false) )
+  {
+    executingCalib = true; // set the boolean state // <DEBUG> might be redundant
 
-  #ifdef SERIAL_VERBOSE
-    Serial.print("Starting calibration...");
-  #endif
+    #ifdef SERIAL_VERBOSE
+      Serial.println("Starting calibration now");
+    #endif
 
 
-	// Let's move to the RIGHT: RELATIVE
-	stepper.setMaxSpeed(calibrationSpeedMicroStepsPerSeconds_max);
-	stepper.move( (long)(+1 * calibrationExplorationMicroSteps) ); // This RELATIVE!
-	stepper.setSpeed(((stepper.distanceToGo() > 0) ? +1.0 : -1.0) * calibrationSpeedMicroStepsPerSeconds_normal);
-	// printStepperState();
-	while ( (stepper.distanceToGo() != 0) && (abortMovement == false) )
-	{
-		stepper.runSpeed();
-	}
+    //* If the table is touching both (2) LSs, ABORT, beacause that should not happen
+    if ( not( (digitalRead(PIN_LIMIT_RIGHT) == 1) && (digitalRead(PIN_LIMIT_LEFT) == 1) ) )
+    {
+      Serial.println("At least 1 of the LS is NOT ON"); // <DEBUG>
 
-	// Set the rightmost position TEMPORARY as 0 to make the step counting easy as
-	stepper.setCurrentPosition(0);
+      //* If the table is touching ONLY 1 LS, then move the other direction
+      while((digitalRead(PIN_LIMIT_RIGHT) == 1) || (digitalRead(PIN_LIMIT_LEFT) == 1))
+      {
+        Serial.println("At least 1 of the 2 LS is ON, detriggering now"); // <DEBUG>
+        // <TODO> take into account the direction
+        // The stepper should already be enabled
 
-	// Let's move to the LEFT: RELATIVE
-	stepper.setMaxSpeed(calibrationSpeedMicroStepsPerSeconds_max);
-	stepper.move( (long)(-1 * calibrationExplorationMicroSteps) ); // This RELATIVE!
-	stepper.setSpeed( ((stepper.distanceToGo() > 0) ? +1.0 : -1.0) * calibrationSpeedMicroStepsPerSeconds_normal );
-	// printStepperState();
-	while ( (stepper.distanceToGo() != 0) && (abortMovement == false) )
-	{
-		stepper.runSpeed();
-	}
+        // Let's move to the LEFT (-) if RIGHT is triggered: RELATIVE
+        stepper.setMaxSpeed(calibrationSpeedMicroStepsPerSeconds_max);
+        stepper.move( (long)((((digitalRead(PIN_LIMIT_LEFT) == 1)) ? +1.0 : -1.0) * detriggeringExplorationMicroSteps) ); // This RELATIVE!
+        stepper.setSpeed(((stepper.distanceToGo() > 0) ? +1.0 : -1.0) * calibrationSpeedMicroStepsPerSeconds_normal);
+        // printStepperState();
+        while ( (stepper.distanceToGo() != 0) && (abortMovement == false) )
+        {
+          stepper.runSpeed();
+        }
+
+        Serial.println("Detriggereing movement done, was that enough?"); // <DEBUG>
+        // Serial.print("abortCalibration:"); // <DEBUG>
+        // Serial.println(abortCalibration); // <DEBUG>
+      }
+
+      //* Wherever the motor is NOW, move right until the RIGHT LS is triggerd (or timeout), if the LFT one triggers, ABORT
+      #ifdef SERIAL_VERBOSE
+        Serial.println("Trying to reach the 1st LS: the RIGHT one, waiting for an ISR trigger...");
+      #endif
+
+      // Let's move to the RIGHT: RELATIVE
+      stepper.setMaxSpeed(calibrationSpeedMicroStepsPerSeconds_max);
+      stepper.move( (long)(+1 * calibrationExplorationMicroSteps) ); // This RELATIVE!
+      stepper.setSpeed(((stepper.distanceToGo() > 0) ? +1.0 : -1.0) * calibrationSpeedMicroStepsPerSeconds_normal);
+      // printStepperState();
+      unsigned long startedWaiting = millis();
+      Serial.println("Started the run "); // <DEBUG>
+      while ( (stepper.distanceToGo() != 0) && (abortMovement == false)  && (millis() - startedWaiting <= STEPPER_CALIB_REACH_LS_R_TIMEOUT_MS) )
+      {
+        stepper.runSpeed();
+      }
+      #ifdef SERIAL_VERBOSE
+        Serial.println("Run ended, why?"); // <DEBUG>
+      #endif
+
+      // Set the rightmost position TEMPORARY as 0 to make the step counting easy as
+      stepper.setCurrentPosition(0);
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+	// // Let's move to the LEFT: RELATIVE
+	// stepper.setMaxSpeed(calibrationSpeedMicroStepsPerSeconds_max);
+	// stepper.move( (long)(-1 * calibrationExplorationMicroSteps) ); // This RELATIVE!
+	// stepper.setSpeed( ((stepper.distanceToGo() > 0) ? +1.0 : -1.0) * calibrationSpeedMicroStepsPerSeconds_normal );
+	// // printStepperState();
+	// while ( (stepper.distanceToGo() != 0) && (abortMovement == false) )
+	// {
+	// 	stepper.runSpeed();
+	// }
 
 
 	// This is the END position, get the table (motor) position and save it (homebrew abs())
@@ -578,20 +636,22 @@ void readTrimpots(void)
 
 		// Display (for  <DEBUG> only)
 		//----------------------------
-#ifdef SHOW_TRIMPOT_VALUE
+    #ifdef SHOW_TRIMPOT_VALUE
 		// Raw values
-		//  Serial.print(sensorValue1);
-		//  Serial.print(" ");
-		//  Serial.print(median1);
-		//  Serial.print(" ");
-		//  Serial.print(sensorValue2);
-		//  Serial.print(" ");
-		//  Serial.println(median2);
+		 Serial.print(sensorValue1);
+		 Serial.print(" ");
+		 Serial.print(median1);
+		 Serial.print(" ");
+		 Serial.print(sensorValue2);
+		 Serial.print(" ");
+		 Serial.print(median2);
+     Serial.print(" ");
+    //  Serial.println();
 		// Final values
 		Serial.print  (current_trimpotFrequency_filtered);
 		Serial.print(" ");
 		Serial.println(current_trimpotAmplitude_filtered);
-#endif
+    #endif
 		
 	}
 }// END OF THE FUNCTION
@@ -669,7 +729,105 @@ void singleCyleMovement(long  halfAmplitudeMicroSteps, float manual_MicroStepsPe
 	
 }// END OF THE FUNCTION
 
+//******************************************************************************************
+void prepareScenario(void)
+{
+  needScenario = false; // reset the flag
+        
+  Serial.println("Starting a new scenario");
 
 
+  Serial.println("Let's check if the table is centered");
+  if( (stepper.currentPosition() != 0) && (abortMovement == false) )
+  {
+    Serial.println("Oups, looks like we didn't stop on the center of the rail, centering now");
+    moveTableToCenter(); // You need to have enabled the stepper BEFORE
+  }
+
+  Serial.print("cleaning previous scenario data...");
+  memset (scenarioSteps, (long)0 ,    nbr_movementsScenario);
+  memset (scenarioSpeed, (float)0.0 , nbr_movementsScenario);
+  Serial.println("done");
+
+  Serial.print("Loading scenario data...");
+  // Amplitude in [microsteps]
+  scenarioSteps[0] = +200;
+  scenarioSteps[1] = -200;
+  scenarioSteps[2] = +200;
+  scenarioSteps[3] = -100;
+  scenarioSteps[4] = +100;
+  scenarioSteps[5] = +50;
+  scenarioSteps[6] = -25;
+  scenarioSteps[7] = +25;
+  scenarioSteps[8] = -200;
+  scenarioSteps[9] = +200;
+
+  // Speeds must all be > 0, analog to frequency, in [microsteps/s]
+  // Have you noticed the ".0"? This is MANDATORY
+  scenarioSpeed[0] = 250.0;
+  scenarioSpeed[1] = 1000.0;
+  scenarioSpeed[2] = 850.0;
+  scenarioSpeed[3] = 360.0;
+  scenarioSpeed[4] = 400.0;
+  scenarioSpeed[5] = 1000.0;
+  scenarioSpeed[6] = 900.0;
+  scenarioSpeed[7] = 914.0;
+  scenarioSpeed[8] = 500.0;
+  scenarioSpeed[9] = 100.0;
+  Serial.println("done");
+
+  // Set the maximum allowed speed for manual control (idenpendant of what can be set by the trimpots
+  Serial.print("Setting the maximum allowed speed for scenario settings..."); 
+  stepper.setMaxSpeed(manualSpeedMicroStepsPerSeconds);
+  stepper.setAcceleration(manualSpeedMicroStepsPerSecondsPerSeconds);
+  Serial.println("done");
+
+  executingScenario = true; // setting the boolean for the next iteration
+
+}// END OF THE FUNCTION
+
+//******************************************************************************************
+void executeScenario(void)
+{
+  Serial.print("Executing the previously set scenario in ... ");
+
+  for (int cnt_wait = 5; cnt_wait > 0; cnt_wait--)
+  {
+    if (abortMovement == false)
+    {
+      Serial.printf("%d ... ", cnt_wait);
+      delay(1000);
+    }
+  }
+  Serial.println();
+  Serial.println("And here ... we ... go");
+  
+  int cnt_scenarioMovements = 0;
+  while ( (cnt_scenarioMovements < nbr_movementsScenario) && (abortMovement == false) && (digitalRead(PIN_TOGGLE_MODE) == MODE_SCENARIO) )
+  {
+    stepper.move(scenarioSteps[cnt_scenarioMovements]);
+    stepper.setSpeed(((stepper.distanceToGo() > 0) ? +1.0 : -1.0) * scenarioSpeed[cnt_scenarioMovements]); // Order matters!!!! 1->speed 2->steps
+    
+    while ( (stepper.distanceToGo() != 0) && (abortMovement == false) && (digitalRead(PIN_TOGGLE_MODE) == MODE_SCENARIO) )
+    {
+      stepper.runSpeed();
+    }
+    cnt_scenarioMovements++;
+  }
+  
+  
+  executingScenario = false; // reset the boolean
+  Serial.println("Scenario done");
+
+  delay(5000); //waiting before centering the table
+  
+  Serial.println("Let's check if the table is centered");
+  if( (stepper.currentPosition () != 0) && (abortMovement == false) )
+  {
+    Serial.println("Oups, looks like we didn't stop on the center of the rail, centering now");
+    moveTableToCenter(); // You need to have enabled the stepper BEFORE
+  }
+
+}// END OF THE FUNCTION
 
 // END OF THE FILE

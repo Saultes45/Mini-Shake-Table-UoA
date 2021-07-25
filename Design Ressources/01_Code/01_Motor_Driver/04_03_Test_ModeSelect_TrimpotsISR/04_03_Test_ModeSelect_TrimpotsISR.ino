@@ -177,7 +177,7 @@ void loop()
 			// If we are in Manual, then attach the timer interrupt to read the trimpots
 			
 			#ifdef USE_TC3
-			TimerTc3.initialize(10000);
+			TimerTc3.initialize(100000);
 			TimerTc3.attachInterrupt(timerTrimpotISR);
 			#else
 			TimerTcc0.initialize(10000); // 1e6 = 1s
