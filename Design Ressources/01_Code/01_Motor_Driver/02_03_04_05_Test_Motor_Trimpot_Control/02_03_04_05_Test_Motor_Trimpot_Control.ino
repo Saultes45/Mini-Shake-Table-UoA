@@ -140,27 +140,41 @@ void setup()
 	calibrateStepper(); // You need to have enabled the stepper BEFORE
 
 	Serial.println("---------------------------------");
-
-	// Move the shake table back to the center to execute the movement of the trimpots
-  delay(5000); // This is to be able to tell the difference between fake calibration and move to center
-	moveTableToCenter(); // You need to have enabled the stepper BEFORE
-	Serial.println("The shake table should be centered now. You are ready to go!"); 
-
-	Serial.println("---------------------------------");
-
-	// if there are NO errors then we can continue the setup
+	
+  // if there are NO errors then we can continue the setup
 	if (abortMovement == false)
 	{
-		/*
-		* Make sure the mode recorded in this SW is 
-		* the same as the one on the physical toggle switch 
-		*/
+    // Move the shake table back to the center to execute the movement of the trimpots
+    delay(5000); // This is to be able to tell the difference between fake calibration and move to center
+    moveTableToCenter(); // You need to have enabled the stepper BEFORE
+    Serial.println("The shake table should be centered now. You are ready to go!"); 
 
-		displayStepperSettings();
-		
-		Serial.println("---------------------------------"); // Indicates the end of the setup
-		
-		enableTrimpots(digitalRead(PIN_TOGGLE_MODE)); // We enable the trimpots here only if we the toggle switch is in manual mode
+    Serial.println("---------------------------------");
+
+    // if there are NO errors then we can continue the setup
+    if (abortMovement == false)
+    {
+      /*
+      * Make sure the mode recorded in this SW is 
+      * the same as the one on the physical toggle switch 
+      */
+
+      displayStepperSettings();
+
+      // Start the serial port with the Rapsberry Pi (both HW)
+      /* Use this link for the RPi side:
+      * https://learn.adafruit.com/adafruits-raspberry-pi-lesson-5-using-a-console-cable/test-and-configure
+      *  port = "/dev/ttyAMA0"    # Raspberry Pi 2
+      *  port = "/dev/ttyS0"      # Raspberry Pi 3
+      */
+      Serial1.begin(COMMAND_BAUD_RATE);
+      flushReceiveAndTransmit();
+  
+      
+      Serial.println("---------------------------------"); // Indicates the end of the setup
+      
+      enableTrimpots(digitalRead(PIN_TOGGLE_MODE)); // We enable the trimpots here only if we the toggle switch is in manual mode
+    }
 	}
 }
 
@@ -175,9 +189,13 @@ void loop()
 {
 
 
-	// Checking the flag of some ISRs [3]: LS and Mode select
-	//---------------------------------------------------------
+	// Checking the flag of some ISRs [3]: LS [2] and Mode Select [1]
+	//---------------------------------------------------------------
 	checkISRFlags();
+
+  // Checking if we have received data from the RPi serial port
+	//-----------------------------------------------------------
+	checkSerialPort();
 	
 	if (abortMovement == false) // the 1st check of this variable out of many more
 	{

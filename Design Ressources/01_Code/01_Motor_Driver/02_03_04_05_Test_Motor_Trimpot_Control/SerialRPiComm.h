@@ -7,7 +7,7 @@
 * Metadata
 * Written by    : Nathanaël Esnault
 * Verified by   : Nathanaël Esnault
-* Creation date : 2021-07-23
+* Creation date : 2021-07-26
 * Version       : 0.1 (finished on 2021-..-..)
 * Modifications :
 * Known bugs    :
@@ -32,16 +32,8 @@
 // -------------------------- Includes --------------------------
 
 // -------------------------- Defines --------------------------
-// Boolean states
-bool    executingScenario   = false;      // Indicates if we are currently in distance calibration with the Limit Switches
-bool    needScenario        = false;      // Indicates if the controller need to run a scenario
 
-// Local Scenario
-//----------------
-const int   nbr_movementsScenario           = 10; // This variable is const because it defuines the size of the memory we can allocate to scenario parameters
-long  scenarioSteps[nbr_movementsScenario]  = {0};
-float scenarioSpeed[nbr_movementsScenario]  = {0.0};
-// bool  abortScenario                         = true; // a variable that store potential reason to stop a scenario
+
 
 
 

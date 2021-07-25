@@ -38,15 +38,17 @@
 #include "Trimpot.h"
 #include "Stepper.h"
 #include "Scenario.h"
+#include "SerialRPiComm.h"
 
 
 // -------------------------- Defines --------------------------
 // General
 #define SERIAL_VERBOSE                        // Uncomment to see more debug messages
 //#define WAIT_FOR_SERIAL                       // Uncomment to wait for the serial port to be opened from the PC end before starting
-#define CONSOLE_BAUD_RATE             115200  // Baudrate in [bauds] for serial communication to the console
+#define CONSOLE_BAUD_RATE             115200  // Baudrate in [bauds] for serial communication to the console (USB-C of the XIAO)
+#define COMMAND_BAUD_RATE             115200  // Baudrate in [bauds] for serial communication to the Raspberry Pi (RPi GPIO 15 for XIAO TX-6/RPi GPIO 14 for XIAO TX-7)
 //#define SHOW_TRIMPOT_VALUE                  // Uncomment to see the calculated frequency and amplitude values in the ISR
-
+#define SERIAL_SHOW_RPI_DATA                  // Uncomment to see what the raspberry pi has sent
 
 // Mode selection
 //---------------
@@ -65,7 +67,7 @@ const uint16_t MS_DEBOUNCE_TIME         = 50;      // mode switch button debounc
 volatile bool           flagMode            = false;
 volatile unsigned long  last_interrupt_time = 0;
 
-// -------------------------- Functions declaration [13] --------------------------
+// -------------------------- Functions declaration [14] --------------------------
 void      pinSetUp                (void);
 void      attachISRs              (void);
 void      enableTrimpots          (bool enableOrder);
@@ -79,6 +81,9 @@ void 	    singleCyleMovement      (long halfAmplitudeMicroSteps, float manual_Mi
 void      readTrimpots            (void);
 void      prepareScenario         (void);
 void      executeScenario         (void);
+void      flushReceiveAndTransmit (void);
+void      readRPiBuffer           (void);
+
 
 
 
@@ -497,6 +502,28 @@ void  calibrateStepper (void) // <TODO> This is currently a placeholder, use the
         Serial.println("Run ended, why?"); // <DEBUG>
       #endif
 
+      if( (millis() - startedWaiting <= STEPPER_CALIB_REACH_LS_R_TIMEOUT_MS) )
+      {
+        #ifdef SERIAL_VERBOSE
+        Serial.println("No timeout for right LS search, that's good"); // <DEBUG>
+        #endif
+
+        if(flagLS_r)
+        {
+
+        }
+
+      }
+      else
+      {
+        #ifdef SERIAL_VERBOSE
+        Serial.println("Timeout for right LS search, that's BAD");
+        Serial.println("Aborting calibration");
+        #endif
+        calibrationSuccess  = false;
+        abortMovement       = true;
+      }
+
       // Set the rightmost position TEMPORARY as 0 to make the step counting easy as
       stepper.setCurrentPosition(0);
 
@@ -542,6 +569,12 @@ void  calibrateStepper (void) // <TODO> This is currently a placeholder, use the
 
 	calibrationSuccess = true;
 
+
+
+
+
+  // End of the function boolean states
+  //-----------------------------------
 
 	if(calibrationSuccess)
 	{
@@ -829,5 +862,77 @@ void executeScenario(void)
   }
 
 }// END OF THE FUNCTION
+
+
+//******************************************************************************************
+void flushReceiveAndTransmit(void)
+{
+
+  /* Since the flush() method only
+   clears the transmit buffer, how do 
+   you empty the receive (or 
+   incoming) buffer?
+  */
+
+  // Tx
+  while(Serial1.available())
+  Serial1.read();
+
+  // Rx
+  Serial1.flush();
+
+
+}// END OF THE FUNCTION
+
+
+
+
+//******************************************************************************************
+void readRPiBuffer(void)
+{
+  // // const uint16_t  max_nbr_depiledChar = 500; // scope controlled  + cannot be reassigned
+  // uint16_t  cnt_savedMessage = 0;
+
+  if (Serial1.available())
+  {
+    if(Serial1.find("$"))// test the received buffer for SOM_CHAR_SR
+    {
+      
+      /* 
+      * Read the HW serial buffer (from the RPi) and depile all the character.
+      * Later we should have a function that parse and understand the commands
+      */
+
+      #ifdef SERIAL_SHOW_RPI_DATA
+        // <DEBUG> add something
+      #endif
+
+
+      cnt_savedMessage = 0;
+      RS1Dmessage[cnt_savedMessage] = '[';
+      cnt_savedMessage ++;
+      RS1Dmessage[cnt_savedMessage] = '\"';
+      cnt_savedMessage ++;
+
+      unsigned long startedWaiting = millis();
+
+      while((RS1Dmessage[cnt_savedMessage-1] != ']') && (millis() - startedWaiting <= RS1D_DEPILE_TIMEOUT) && (cnt_savedMessage < RX_BUFFER_SIZE))
+      {
+        if (Serial1.available())
+        {
+          RS1Dmessage[cnt_savedMessage] = Serial1.read();
+          cnt_savedMessage++;
+        }
+      }
+
+      if ((RS1Dmessage[cnt_savedMessage-1] == ']')) // if any EOM found then we parse
+      {
+        delay(1);             // YES, it IS ABSOLUTELY necessay, do NOT remove it
+        parseGeophoneData();
+      }
+    }
+    memset(RS1Dmessage, 0, RX_BUFFER_SIZE); // clean the message field anyway
+  }
+}
 
 // END OF THE FILE

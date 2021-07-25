@@ -28,8 +28,15 @@
 * ========================================
 */
 
+// -------------------------- Defines --------------------------
+
+// Timeouts
+//----------
+const unsigned long STEPPER_CALIB_REACH_LS_R_TIMEOUT_MS         = 8000;    // in [ms]
+const unsigned long STEPPER_CALIB_REACH_LS_L_TIMEOUT_MS         = 12000;    // in [ms]
 
 // -------------------------- Global variables ----------------
+
 // Stepper calibration
 //---------------------
 
@@ -37,7 +44,10 @@ float   distanceBetweenLS_MM      = 500.0;      // For stepper calibration
 long    distanceBetweenLS_uSteps  = 0;          // For stepper calibration
 float   ustepsPerMM_calib         = 0.0;        // This parameter holds the calibration parameter
 
+
+
 // Boolean states
+//---------------
 bool    needCalibration           = true;       // Indicates if there is a current good distance calibration done
 bool    executingCalib            = false;      // Indicates if we are currently in distance calibration with the Limit Switches
 bool    calibrationSuccess        = false;      // A variable that tells if the calibration was sucessful
