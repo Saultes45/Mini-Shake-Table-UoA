@@ -162,8 +162,10 @@ void setup()
       displayStepperSettings();
 
       // Start the serial port with the Rapsberry Pi (both HW)
-      /* Use this link for the RPi side:
-      * https://learn.adafruit.com/adafruits-raspberry-pi-lesson-5-using-a-console-cable/test-and-configure
+      /* You can use Python "import serial"
+      *  OR you can use the commad line with existing tools: stty, minicom, https://wiki.emacinc.com/wiki/Getting_Started_With_Minicom
+      *  supported by stty: 230400, 460800, 500000, 576000, 921600, 1000000, 1152000, 1500000, 2000000, 2500000, 3000000, 3500000 and 4000000.
+      *  look at that solution for 921600: Ctrl+F --> "Wed Apr 02, 2014 4:46 pm" in: https://www.raspberrypi.org/forums/viewtopic.php?t=73673
       *  port = "/dev/ttyAMA0"    # Raspberry Pi 2
       *  port = "/dev/ttyS0"      # Raspberry Pi 3
       */
@@ -195,7 +197,7 @@ void loop()
 
   // Checking if we have received data from the RPi serial port
 	//-----------------------------------------------------------
-	checkSerialPort();
+	readRPiBuffer();
 	
 	if (abortMovement == false) // the 1st check of this variable out of many more
 	{

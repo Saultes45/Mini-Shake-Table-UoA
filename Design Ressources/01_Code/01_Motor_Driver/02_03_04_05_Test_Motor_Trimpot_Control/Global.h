@@ -44,9 +44,8 @@
 // -------------------------- Defines --------------------------
 // General
 #define SERIAL_VERBOSE                        // Uncomment to see more debug messages
-//#define WAIT_FOR_SERIAL                       // Uncomment to wait for the serial port to be opened from the PC end before starting
+#define WAIT_FOR_SERIAL                       // Uncomment to wait for the serial port to be opened from the PC end before starting
 #define CONSOLE_BAUD_RATE             115200  // Baudrate in [bauds] for serial communication to the console (USB-C of the XIAO)
-#define COMMAND_BAUD_RATE             115200  // Baudrate in [bauds] for serial communication to the Raspberry Pi (RPi GPIO 15 for XIAO TX-6/RPi GPIO 14 for XIAO TX-7)
 //#define SHOW_TRIMPOT_VALUE                  // Uncomment to see the calculated frequency and amplitude values in the ISR
 #define SERIAL_SHOW_RPI_DATA                  // Uncomment to see what the raspberry pi has sent
 
@@ -67,7 +66,7 @@ const uint16_t MS_DEBOUNCE_TIME         = 50;      // mode switch button debounc
 volatile bool           flagMode            = false;
 volatile unsigned long  last_interrupt_time = 0;
 
-// -------------------------- Functions declaration [14] --------------------------
+// -------------------------- Functions declaration [15] --------------------------
 void      pinSetUp                (void);
 void      attachISRs              (void);
 void      enableTrimpots          (bool enableOrder);
@@ -83,6 +82,7 @@ void      prepareScenario         (void);
 void      executeScenario         (void);
 void      flushReceiveAndTransmit (void);
 void      readRPiBuffer           (void);
+void      parseRPiData            (void);
 
 
 
@@ -338,18 +338,19 @@ void enableStepper(bool enableOrder)
 {
 	if (enableOrder)
 	{
+    // In that case we don't need to be fast: do as many check as you want
 		if ( (digitalRead(PIN_LIMIT_RIGHT) == false) && (digitalRead(PIN_LIMIT_LEFT) == false) && (abortMovement == false) )
 		{
 			#ifdef SERIAL_VERBOSE
 			Serial.println("ENABLING the stepper, be careful...");
 			#endif
-			digitalWrite(PIN_MOTOR_ENA,LOW); // Inverse logic (active low)
+			digitalWrite(PIN_MOTOR_ENA, LOW); // Inverse logic (active low)
 			//    digitalWrite(PIN_MOTOR_ENA,HIGH); // Normal logic (active high)
 		}
 	}
 	else // in that case we want to be BLAZING FAST -> digitalWrite is BEFORE the Serial and TODO: used DMA instead
 	{
-		digitalWrite(PIN_MOTOR_ENA,HIGH); // Inverse logic (active low)
+		digitalWrite(PIN_MOTOR_ENA, HIGH); // Inverse logic (active low)
 		//    digitalWrite(PIN_MOTOR_ENA,LOW); // Normal logic (active high)
 		#ifdef SERIAL_VERBOSE
 		Serial.println("You are going to lose the reference position, calibration will be required");
@@ -437,9 +438,7 @@ void  calibrateStepper (void) // <TODO> This is currently a placeholder, use the
 {
 
 	/* Theory of operation:
-  * Wherever the motor is NOW, move right until the RIGHT LS is triggerd (or timeout), if the LFT one triggers, ABORT
-  * This is the START position.
-  * Move to the the LEFT until (timeout) or LEFT LS triggers, if the LFT one triggers, ABORT
+  *
   */
 
   #ifdef SERIAL_VERBOSE
@@ -510,7 +509,9 @@ void  calibrateStepper (void) // <TODO> This is currently a placeholder, use the
 
         if(flagLS_r)
         {
-
+          #ifdef SERIAL_VERBOSE
+          Serial.println("The correct LS (the RIGHT) has been triggered, that's good"); // <DEBUG>
+          #endif
         }
 
       }
@@ -527,51 +528,8 @@ void  calibrateStepper (void) // <TODO> This is currently a placeholder, use the
       // Set the rightmost position TEMPORARY as 0 to make the step counting easy as
       stepper.setCurrentPosition(0);
 
-
-
-
-
-
-
-
-
-
-
-
-
-  
-
-	// // Let's move to the LEFT: RELATIVE
-	// stepper.setMaxSpeed(calibrationSpeedMicroStepsPerSeconds_max);
-	// stepper.move( (long)(-1 * calibrationExplorationMicroSteps) ); // This RELATIVE!
-	// stepper.setSpeed( ((stepper.distanceToGo() > 0) ? +1.0 : -1.0) * calibrationSpeedMicroStepsPerSeconds_normal );
-	// // printStepperState();
-	// while ( (stepper.distanceToGo() != 0) && (abortMovement == false) )
-	// {
-	// 	stepper.runSpeed();
-	// }
-
-
-	// This is the END position, get the table (motor) position and save it (homebrew abs())
-	//distanceBetweenLS_uSteps = (stepper.currentPosition() > 0) ? +1.0 : -1.0) * stepper.currentPosition();// This is also a distance since we TEMPORARY marked the 0mm as the right-most LS
-	distanceBetweenLS_uSteps = 501; // <DEBUG>
-
-	//* Calculate how many steps have been executed to travel the USER-DEFINED distance between the 2 LS
-	ustepsPerMM_calib = distanceBetweenLS_uSteps / distanceBetweenLS_MM;
-
-	// Define where the 0 position is (it is @ the center of the LS)
-	stepper.setCurrentPosition( -1 * (long)(distanceBetweenLS_uSteps/2) );
-
-	Serial.println("Calibration success!");
-	Serial.printf("The calibrated distance bewteen the 2 limit switches in STEPS is %ld \r\n", distanceBetweenLS_uSteps);
-	Serial.printf("The user-defined distance bewteen the 2 limit switches is %f [mm] \r\n", distanceBetweenLS_MM);
-	Serial.printf("The calibrated STEPS to MM ratio is: %f [mm/steps]\r\n", ustepsPerMM_calib);
-
-	calibrationSuccess = true;
-
-
-
-
+    }
+  }
 
   // End of the function boolean states
   //-----------------------------------
@@ -592,8 +550,6 @@ void  calibrateStepper (void) // <TODO> This is currently a placeholder, use the
 	}
 
   executingCalib = false; // reset the boolean state
-
-}
   
 
 }// END OF THE FUNCTION
@@ -890,16 +846,19 @@ void flushReceiveAndTransmit(void)
 //******************************************************************************************
 void readRPiBuffer(void)
 {
-  // // const uint16_t  max_nbr_depiledChar = 500; // scope controlled  + cannot be reassigned
-  // uint16_t  cnt_savedMessage = 0;
+  // const uint16_t  max_nbr_depiledChar = 500; // scope controlled  + cannot be reassigned
+  uint16_t  cnt_savedMessage = 0;
 
   if (Serial1.available())
   {
-    if(Serial1.find("$"))// test the received buffer for SOM_CHAR_SR
+
+    Serial1.println("&"); // <DEBUG> send a "I am alive!" to the Pi
+
+    if(Serial1.find("$$"))// test the received buffer for SOM_CHAR_SR. This indicates a start of message from the RPi
     {
       
       /* 
-      * Read the HW serial buffer (from the RPi) and depile all the character.
+      * Read the HW serial buffer (from the RPi) and depile all the characters.
       * Later we should have a function that parse and understand the commands
       */
 
@@ -908,31 +867,40 @@ void readRPiBuffer(void)
       #endif
 
 
-      cnt_savedMessage = 0;
-      RS1Dmessage[cnt_savedMessage] = '[';
-      cnt_savedMessage ++;
-      RS1Dmessage[cnt_savedMessage] = '\"';
+      cnt_savedMessage              = 0;
+      RPImessage[cnt_savedMessage]  = '$';
       cnt_savedMessage ++;
 
       unsigned long startedWaiting = millis();
 
-      while((RS1Dmessage[cnt_savedMessage-1] != ']') && (millis() - startedWaiting <= RS1D_DEPILE_TIMEOUT) && (cnt_savedMessage < RX_BUFFER_SIZE))
+      while((RPImessage[cnt_savedMessage-1] != ']') && (millis() - startedWaiting <= RPI_DEPILE_TIMEOUT) && (cnt_savedMessage < RX_BUFFER_SIZE))
       {
         if (Serial1.available())
         {
-          RS1Dmessage[cnt_savedMessage] = Serial1.read();
+          RPImessage[cnt_savedMessage] = Serial1.read();
           cnt_savedMessage++;
         }
       }
 
-      if ((RS1Dmessage[cnt_savedMessage-1] == ']')) // if any EOM found then we parse
+      if ((RPImessage[cnt_savedMessage-1] == ']')) // if any EOM found then we parse
       {
         delay(1);             // YES, it IS ABSOLUTELY necessay, do NOT remove it
-        parseGeophoneData();
+        parseRPiData();
       }
     }
-    memset(RS1Dmessage, 0, RX_BUFFER_SIZE); // clean the message field anyway
+    memset(RPImessage, 0, RX_BUFFER_SIZE); // clean the message field anyway
   }
-}
+}// END OF THE FUNCTION
+
+
+//******************************************************************************************
+void parseRPiData(void)
+{
+  // <Placeholder> <Use the code for the RS1D sesimometer: void parseGeophoneData(void)>
+
+}// END OF THE FUNCTION
+
+
+
 
 // END OF THE FILE
