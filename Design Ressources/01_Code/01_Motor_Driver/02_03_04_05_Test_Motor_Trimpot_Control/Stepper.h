@@ -49,7 +49,7 @@ const uint8_t PIN_MOTOR_ENA    = 5; // Digital output 3.3V, manual logic
  * Handled exclusively by the motor driver - I know, it 
  * is NOT sorted ascendedly but what can I do?
  */
-const long microSteppingFactorList[]                  = {1, 4, 8, 16, 32, 64, 128, 256, 5, 10, 20, 25, 40, 50, 100, 200}; 
+const long microSteppingFactorList[]                    = {1, 4, 8, 16, 32, 64, 128, 256, 5, 10, 20, 25, 40, 50, 100, 200}; 
 /* Says to this program which physical microSteppingFactor 
  * is currently on the motor driver 
  */
@@ -57,37 +57,37 @@ const uint8_t indx_microSteppingFactorList              = 0;
 const long    nativePulsesPerRevolution                 = ((long)200); // This parameter is from the motor and CANNOT be changed 
 const long    microstepsPerRevolution                   = microSteppingFactorList[indx_microSteppingFactorList] * nativePulsesPerRevolution;
 
-const uint    singleCycleRepetition                     = 1; // In manual mode: the number of repetition of the same pattern without changing the parameters
+const int    singleCycleRepetition                     = 1; // In manual mode: the number of repetitions of the same pattern without changing the parameters (amplitude/frequency)
 
 //Parameter for the different modes [4]
 //-------------------------------------
 
 //  Overall max
-const float   max_allowedMicroStepsPerSeconds             = 84000;
-const float   max_allowedMicroStepsPerSecondsPerSeconds   = 84000.0 * 3.5; // max speed acheved in 1/3.5 = 286 [ms]
+const float   max_allowedMicroStepsPerSeconds                   = 84000 * microSteppingFactorList[indx_microSteppingFactorList];
+const float   max_allowedMicroStepsPerSecondsPerSeconds         = 84000.0 * 3.5 * microSteppingFactorList[indx_microSteppingFactorList]; // max speed achieved in 1/3.5 = 286 [ms]
 
 
 // Mode 1 - Homing/Calibration/Detriggering - no acceleration, slow speed
 //const float   calibrationSpeedMicroStepsPerSecondsPerSeconds = 500.0;
-const float   calibrationSpeedMicroStepsPerSeconds_max          = 100.0;
-const float   calibrationSpeedMicroStepsPerSeconds_normal       = 100.0;
-const long    calibrationExplorationMicroSteps                  = 1000; // <DEBUG> too low
-const long    detriggeringExplorationMicroSteps                 = 50;
+const float   calibrationSpeedMicroStepsPerSeconds_max          = 100.0 * microSteppingFactorList[indx_microSteppingFactorList];
+const float   calibrationSpeedMicroStepsPerSeconds_normal       = 100.0 * microSteppingFactorList[indx_microSteppingFactorList];
+const long    calibrationExplorationMicroSteps                  = 1000 * microSteppingFactorList[indx_microSteppingFactorList]; // <DEBUG> too low
+const long    detriggeringExplorationMicroSteps                 = 50 * microSteppingFactorList[indx_microSteppingFactorList]; // <DEBUG> too low
 
 
 // Mode 2 - Centering - acceleration, slow speed
 //const float   centeringSpeedMicroStepsPerSecondsPerSeconds = 500.0;
-const float   centeringSpeedMicroStepsPerSeconds_max          = 500.0;
-const float   centeringSpeedMicroStepsPerSeconds_normal       = 500.0;
-const float   centeringSpeedMicroStepsPerSecondsPerSeconds = max_allowedMicroStepsPerSecondsPerSeconds;
+const float   centeringSpeedMicroStepsPerSeconds_max          = 500.0 * microSteppingFactorList[indx_microSteppingFactorList];
+const float   centeringSpeedMicroStepsPerSeconds_normal       = 500.0 * microSteppingFactorList[indx_microSteppingFactorList];
+const float   centeringSpeedMicroStepsPerSecondsPerSeconds    = max_allowedMicroStepsPerSecondsPerSeconds;
 
 // Mode 3 - Single cycle movement - speed over acceleration, we DO need acceleration
-const float   manualSpeedMicroStepsPerSecondsPerSeconds = max_allowedMicroStepsPerSecondsPerSeconds;
-const float   manualSpeedMicroStepsPerSeconds             = max_allowedMicroStepsPerSeconds;
+const float   manualSpeedMicroStepsPerSecondsPerSeconds       = max_allowedMicroStepsPerSecondsPerSeconds;
+const float   manualSpeedMicroStepsPerSeconds                 = max_allowedMicroStepsPerSeconds;
 
 // Mode 4 - Scenario - accel is needed but it must be time accurate
-const float   scenarioSpeedMicroStepsPerSecondsPerSeconds = max_allowedMicroStepsPerSecondsPerSeconds;
-const float   scenarioSpeedMicroStepsPerSeconds           = max_allowedMicroStepsPerSeconds;
+const float   scenarioSpeedMicroStepsPerSecondsPerSeconds     = max_allowedMicroStepsPerSecondsPerSeconds;
+const float   scenarioSpeedMicroStepsPerSeconds               = max_allowedMicroStepsPerSeconds;
 
 
 
