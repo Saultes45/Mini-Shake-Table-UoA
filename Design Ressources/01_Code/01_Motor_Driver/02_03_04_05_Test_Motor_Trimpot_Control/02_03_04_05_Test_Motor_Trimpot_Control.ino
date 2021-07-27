@@ -31,61 +31,14 @@
 
 // -------------------------- Includes --------------------------
 
-
 #include "Global.h"
 
 
-
-
 // -------------------------- Defines --------------------------
-
-
-
-// Stepper motor driver pins (logic low)
-//--------------------------------------
-//moved in "Stepper.h"
-
-// Stepper conversion factors
-//-----------------------------
-//moved in "Stepper.h"
-
-// Limit switches pins
-//--------------------
-//moved in "LimitSwitches.h"
-
-// Trimpot pins
-//--------------
-//moved in "Trimpot.h"
-
-// Mode selection
-//---------------
-//moved in "Global.h"
-
+// moved in "Global.h"
 
 // -------------------------- Global variables ----------------
-
-
-// Limit switches
-//---------------
-//moved in "LimitSwitches.h"
-
-// Mode toggle switch
-//-------------------
-//moved in "Global.h"
-
-// Trimpots
-//---------
-// moved in "Trimpot.h"
-
-
-// Stepper motor driver 
-//----------------------
-//moved in "Stepper.h"
-
-
-// Stepper calibration
-//---------------------
-// moved in in "StepperCalibration.h"
+// moved in "Global.h"
 
 // -------------------------- Functions declaration [7] --------------------------
 // moved in "Global.h"
@@ -102,7 +55,7 @@ void setup()
 	// -----------------------------------------------
 	Serial.begin(CONSOLE_BAUD_RATE); //Begin serial communication (USB)
 	#ifdef WAIT_FOR_SERIAL
-	while (! Serial); // Wait for user to open the com port
+	while (! Serial); // Wait for user to open the com port // <DEBUG> THIS IS ULATRA DANGEROUS
 	#endif
 	delay(1000);
 	Serial.println("---------------------------------");
@@ -116,21 +69,18 @@ void setup()
 	abortMovement            = false;       
 	calibrationSuccess       = false;
 	needCalibration          = true;
-  // This must absolutely be done BEFORE the ISRs
-  executingCalib = true; // set the boolean state // <DEBUG> might be redundant
+  executingCalib           = true; // This must absolutely be done BEFORE the ISRs // <DEBUG> might be redundant
 
 	// ISRs
 	// ----
 	attachISRs();
 	enableTrimpots(false); // Disable the trimpot's timer, we will enable them only @ the end of the setup
 
-
-
 	// Enabling the stepper
 	//---------------------
 	Serial.println("Make sure the manual \"stepper enable\" toggle switch on the front panel is set to the \"ENABLED\"");
 	delay(1000); 
-	Serial.println(" /!\\ Be careful, we are going to enable the stepper");
+	Serial.println("/!\\ We are going to ENABLE the stepper, be careful");
 	delay(1000);  
 	enableStepper(true);
 	delay(1000); 

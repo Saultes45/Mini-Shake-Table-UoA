@@ -83,19 +83,19 @@ MedianFilter2<int> medianFilter2(NBR_SAMPLES_MEDIAN);
 volatile float current_trimpotAmplitude_filtered = 0.0;
 
 // precision  (trimpot_frequency_max - trimpot_frequency_min) / 1024
-// 0.97Hz/LSB
+// ??? Hz/LSB
 float trimpot_frequency_range_max_lsb   = XIAO_ADC_MAX_LSB; // in [LSB]
-float trimpot_frequency_range_min_lsb   = 6.0;        // in [LSB]
-float trimpot_frequency_max             = 0.75;       // in [Hz]
-float trimpot_frequency_min             = 0.25;        // in [Hz]
+float trimpot_frequency_range_min_lsb   = 6.0;              // in [LSB]
+float trimpot_frequency_max             = 0.75;             // in [Hz]
+float trimpot_frequency_min             = 0.25;             // in [Hz]
 // to use with stepper.setAcceleration
 
 // amplitude  (trimpot_amplitude_max - trimpot_amplitude_min) / 1024
-// 9.765625E-4 stepper shaft rotations/LSB
+// ??? stepper shaft rotations/LSB
 float trimpot_amplitude_range_max_lsb   = XIAO_ADC_MAX_LSB;  // in [LSB]
-float trimpot_amplitude_range_min_lsb   = 6.0;         // in [LSB]
-float trimpot_amplitude_max             = 200.0;         // in [mm]
-float trimpot_amplitude_min             = 0.0;         // in [mm]
+float trimpot_amplitude_range_min_lsb   = 6.0;               // in [LSB]
+float trimpot_amplitude_max             = 200.0;             // in [mm]
+float trimpot_amplitude_min             = 0.0;               // in [mm]
 // to use with : stepper.moveTo
 
 
