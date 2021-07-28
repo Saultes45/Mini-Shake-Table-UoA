@@ -4,8 +4,44 @@ JSS mecatronics co. LTD.    https://www.jss-motor.com/
 Stepper motor
 -------------
 
-nema23 57HS 2 phase 1.8° hybrid stepper motor
 
+nema34 86HS 2 phase 1.8° hybrid stepper motor:
+86HS78-4204A14-B35
+https://www.jss-motor.com/product/nema34-86HS-2-phase-1-8%C2%B0-hybrid-stepper-motor.html
+
+Model No	Step
+Angle
+(°)	Rated
+Voltage
+(V)	Rated
+Current
+(A)	Phase
+Resistance
+(Ω)	Phase
+Inductance
+(mH)	Holding
+Torque
+(Kg.cm)	Rotor
+Inertia
+(g.cm²)	Motor
+Length
+(mm)	Leads No.	Motor
+Weight
+(Kg)
+87HS78-4204	1.8	1.9 	4.2	0.45	4	45	1400	78	4	2.3
+
+Item	Specifications
+Step Angle Accuracy	±5% 
+Resistance Accuracy	±10%
+Inductance Accuracy	±20%
+Temperature Rise	80℃ Max 
+Ambient Temperature	-20℃～+50℃
+Insulation Resistance	100MΩMin.500VDC
+Dielectric Strength	500VAC for one minute
+Shaft Radial Play	0.02Max.(450g-load)
+Shaft Axial Play	0.08Max.(450g-load)
+
+nema23 57HS 2 phase 1.8° hybrid stepper motor:
 https://www.jss-motor.com/product/nema23-57HS-2-phase-1-8%C2%B0-hybrid-stepper-motor.html
 
 |          Item         |     Specifications    |
@@ -13,8 +49,8 @@ https://www.jss-motor.com/product/nema23-57HS-2-phase-1-8%C2%B0-hybrid-stepper-m
 |  Step Angle Accuracy  |          ±5%          |
 |  Resistance Accuracy  |          ±10%         |
 |  Inductance Accuracy  |          ±20%         |
-|    Temperature Rise   |        80℃ Max       |
-|  Ambient Temperature  |       -20℃～+50℃     |
+|    Temperature Rise   |        80°C Max       |
+|  Ambient Temperature  |       -20°C～+50°C    |
 | Insulation Resistance |    100MΩMin.500VDC    |
 |  Dielectric Strength  | 500VAC for one minute |
 |   Shaft Radial Play   |  0.02Max.(450g-load)  |
