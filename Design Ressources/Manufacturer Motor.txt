@@ -6,7 +6,8 @@ Stepper motor
 
 
 nema34 86HS 2 phase 1.8° hybrid stepper motor:
-86HS78-4204A14-B35
+86HS78-4204A14-B35 (proforma invoice from JSS)
+87HS78-4204         (quote)
 https://www.jss-motor.com/product/nema34-86HS-2-phase-1-8%C2%B0-hybrid-stepper-motor.html
 
 Model No	Step
