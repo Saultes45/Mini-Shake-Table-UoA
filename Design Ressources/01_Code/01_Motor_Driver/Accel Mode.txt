@@ -1,9 +1,0 @@
-In which mode do we want some acceleration
-
-Centering - no acceleration, slow speed
-
-Homing/Calibration - no acceleration, slow speed
-
-Single cycle movement - speed over acceleration, we DO need acceleration
-
-Scenario - accel is needed but it must be time accurate
