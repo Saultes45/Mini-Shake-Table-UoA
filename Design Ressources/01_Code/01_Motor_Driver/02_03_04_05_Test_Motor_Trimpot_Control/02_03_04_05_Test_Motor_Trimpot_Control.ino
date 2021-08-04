@@ -141,14 +141,16 @@ void loop()
 {
 
 
-	// Checking the flag of some ISRs [3]: LS [2] and Mode Select [1]
+	// 1/3 - Checking the flag of some ISRs [3]: LS [2] and Mode Select [1]
 	//---------------------------------------------------------------
 	checkISRFlags();
 
-  // Checking if we have received data from the RPi serial port
+  // 2/3 - Checking if we have received data from the RPi serial port
 	//-----------------------------------------------------------
 	readRPiBuffer();
 	
+  // 3/3 - Checking if we need to perform a movement with the stepper
+	//-----------------------------------------------------------
 	if (abortMovement == false) // the 1st check of this variable out of many more
 	{
 
@@ -165,13 +167,12 @@ void loop()
 			long  halfAmplitudeMicroSteps       = (long)(0.5 * (current_trimpotAmplitude_filtered * ustepsPerMM_calib)); 
 			float manual_MicroStepsPerSeconds   = (float)( (float)halfAmplitudeMicroSteps * 2 * current_trimpotFrequency_filtered);
 
-      Serial.printf("Current trimpots %f \t %f \t manual settings: %lu \t %f\r\n", current_trimpotAmplitude_filtered, current_trimpotFrequency_filtered, halfAmplitudeMicroSteps, manual_MicroStepsPerSeconds);
+      Serial.printf("Current trimpots %f \t %f \t Manual settings: %lu \t %f\r\n", current_trimpotAmplitude_filtered, current_trimpotFrequency_filtered, halfAmplitudeMicroSteps, manual_MicroStepsPerSeconds);
 
 
 			// Before executing a movement, check that the orders from the trimpots make sense, i.e. > 0?
 			if ( (halfAmplitudeMicroSteps > ((long)0)) && (manual_MicroStepsPerSeconds > 0.0) && (abortMovement == false))
 			{
-				Serial.printf("Current trimpots %f \t %f \t manual settings: %lu \t %f\r\n", current_trimpotAmplitude_filtered, current_trimpotFrequency_filtered, halfAmplitudeMicroSteps, manual_MicroStepsPerSeconds);
 
 				// Set the maximum allowed speed for manual control (idenpendant of what can be set by the trimpots 
 				stepper.setMaxSpeed(manualSpeedMicroStepsPerSeconds);
@@ -232,6 +233,7 @@ void loop()
 		executingScenario = false;
 	}
 }// END OF THE LOOP
+
 
 
 // END OF THE FILE

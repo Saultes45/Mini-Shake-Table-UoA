@@ -493,10 +493,13 @@ void  calibrateStepper (void) // <TODO> This is currently a placeholder, use the
 
       if (abortMovement == false)
       {
+
+        unsigned long startedWaiting = 0;
+
         //------------------------------------------------------------------------------------------------------------------------
         //* Wherever the motor is NOW, move right until the RIGHT LS is triggerd (or timeout), if the LFT one triggers, ABORT
         #ifdef SERIAL_VERBOSE
-          Serial.println("Trying to reach the 1st LS: the RIGHT one, waiting for an ISR trigger...");
+          Serial.println("Trying to reach the 1st LS: the RIGHT one, waiting for an ISR trigger");
         #endif
 
         flagLS_l        = false;
@@ -508,8 +511,8 @@ void  calibrateStepper (void) // <TODO> This is currently a placeholder, use the
         stepper.move( (long)(+1 * calibrationExplorationMicroSteps) ); // This RELATIVE!
         stepper.setSpeed(((stepper.distanceToGo() > 0) ? +1.0 : -1.0) * calibrationSpeedMicroStepsPerSeconds_normal);
         // printStepperState();
-        unsigned long startedWaiting = millis();
-        Serial.println("Started the run ");
+        startedWaiting = millis(); // for timeout
+        Serial.println("Started the run");
         // We wait here for the ISR associated with the 
         while ( (stepper.distanceToGo() != 0) && (abortMovement == false)  && (millis() - startedWaiting <= STEPPER_CALIB_REACH_LS_R_TIMEOUT_MS) )
         {
@@ -525,15 +528,25 @@ void  calibrateStepper (void) // <TODO> This is currently a placeholder, use the
           Serial.println("No timeout for right LS search, that's good");
           #endif
 
-          if(flagLS_r)
+          // <TODO> check if we have an error due to the stepper reaching target w/o triggering a LS --> stepper.distanceToGo() != 0)
+
+          if ( not( (flagLS_r==true) && (flagLS_l==true) ) ) // check that only 1 flag is set
           {
-            #ifdef SERIAL_VERBOSE
-            Serial.println("The correct LS (the RIGHT) has been triggered, that's good");
-            #endif
+            if(flagLS_r)
+            {
+              #ifdef SERIAL_VERBOSE
+              Serial.println("The correct LS (the RIGHT) has been triggered, that's good");
+              #endif
+            }
+            else
+            {
+              calibrationError(4);
+            }
+            // <TODO> check if the other (wrong) ISR flag is set
           }
-          else
+          else // 2 ISR flag set = 2 LS triggered, should never happen
           {
-            calibrationError(4);
+            calibrationError(3);
           }
 
         }
@@ -545,25 +558,27 @@ void  calibrateStepper (void) // <TODO> This is currently a placeholder, use the
         // Set the right-most position TEMPORARY as 0 to make the step counting easy as
         stepper.setCurrentPosition(0);
 
+
+
         //------------------------------------------------------------------------------------------------------------------------
-        //Move right until the LEFT LS is triggerd (or timeout), if the RIGHT one triggers, ABORT
+        //Move left until the RIGHT LS is triggerd (or timeout), if the LEFT one triggers, ABORT
         #ifdef SERIAL_VERBOSE
-          Serial.println("Trying to reach the 1st LS: the RIGHT one, waiting for an ISR trigger...");
+          Serial.println("Trying to reach the 2nd LS: the LEFT one, waiting for an ISR trigger");
         #endif
 
         flagLS_l        = false;
         flagLS_r        = false;
 
-        // Let's move to the RIGHT (+): RELATIVE
+        // Let's move to the LEFT (-): RELATIVE
         //--------------------------------------
         stepper.setMaxSpeed(calibrationSpeedMicroStepsPerSeconds_max);
-        stepper.move( (long)(+1 * calibrationExplorationMicroSteps) ); // This RELATIVE!
+        stepper.move( (long)(-1 * calibrationExplorationMicroSteps) ); // This RELATIVE!
         stepper.setSpeed(((stepper.distanceToGo() > 0) ? +1.0 : -1.0) * calibrationSpeedMicroStepsPerSeconds_normal);
         // printStepperState();
-        unsigned long startedWaiting = millis();
-        Serial.println("Started the run ");
+        startedWaiting = millis(); // for timeout
+        Serial.println("Started the run");
         // We wait here for the ISR associated with the 
-        while ( (stepper.distanceToGo() != 0) && (abortMovement == false)  && (millis() - startedWaiting <= STEPPER_CALIB_REACH_LS_R_TIMEOUT_MS) )
+        while ( (stepper.distanceToGo() != 0) && (abortMovement == false)  && (millis() - startedWaiting <= STEPPER_CALIB_REACH_LS_L_TIMEOUT_MS) )
         {
           stepper.runSpeed();
         }
@@ -571,28 +586,70 @@ void  calibrateStepper (void) // <TODO> This is currently a placeholder, use the
           Serial.println("Run ended, why?");
         #endif
 
-        if( (millis() - startedWaiting <= STEPPER_CALIB_REACH_LS_R_TIMEOUT_MS) )
+        if( (millis() - startedWaiting <= STEPPER_CALIB_REACH_LS_L_TIMEOUT_MS) )
         {
           #ifdef SERIAL_VERBOSE
-          Serial.println("No timeout for right LS search, that's good"); // <DEBUG>
+          Serial.println("No timeout for left LS search, that's good");
           #endif
 
-          if(flagLS_r)
+          // <TODO> check if we have an error due to the stepper reaching target w/o triggering a LS --> stepper.distanceToGo() != 0)
+
+          if ( not( (flagLS_r==true) && (flagLS_l==true) ) ) // check that only 1 flag is set
           {
-            #ifdef SERIAL_VERBOSE
-            Serial.println("The correct LS (the RIGHT) has been triggered, that's good"); // <DEBUG>
-            #endif
+            if(flagLS_l)
+            {
+              #ifdef SERIAL_VERBOSE
+              Serial.println("The correct LS (the LEFT) has been triggered, that's good");
+              #endif
+            }
+            else
+            {
+              calibrationError(7);
+            }
+            // <TODO> check if the other (wrong) ISR flag is set
+          }
+          else // 2 ISR flag set = 2 LS triggered, should never happen
+          {
+            calibrationError(6);
           }
 
         }
         else
         {
-          calibrationError(5);
+          calibrationError(8);
         }
 
 
+
+
+        #ifdef SERIAL_VERBOSE
+        Serial.println("All movements done");
+        #endif
+
+
         // Save the current position as the total distance the table travelled
-        totalPossibleTravel_uSteps = abs(stepper.currentPosition());
+        totalPossibleTravel_uSteps = (long)( ((stepper.currentPosition() > 0) ? +1 : -1) * stepper.currentPosition() );
+
+        // Conversion factor calculation
+        //------------------------------
+        if(totalPossibleTravel_MM < 1.0)
+        {
+          if(totalPossibleTravel_uSteps < 1)
+          {
+            ustepsPerMM_calib = ( (float)( totalPossibleTravel_uSteps ) ) / totalPossibleTravel_MM;
+          }
+          else
+          {
+            calibrationError(10);
+          }
+        }
+        else
+        {
+          calibrationError(9);
+        }
+        
+
+
       }
       else // abort due to De-triggereing
       {
@@ -610,10 +667,7 @@ void  calibrateStepper (void) // <TODO> This is currently a placeholder, use the
     // <DEBUG> do not change the state of "calibrationSuccess"
   }
 
-  // Conversion factor calculation
-  //------------------------------
 
-  ustepsPerMM_calib = ( (float)( totalPossibleTravel_uSteps ) ) / totalPossibleTravel_MM ;
 
   // End of the function boolean states
   //-----------------------------------
@@ -911,7 +965,7 @@ void flushReceiveAndTransmit(void)
   /* Since the flush() method only
    clears the transmit buffer, how do 
    you empty the receive (or 
-   incoming) buffer?
+   incoming) buffer? --> like this:
   */
 
   // Tx
@@ -936,9 +990,10 @@ void readRPiBuffer(void)
   if (Serial1.available())
   {
 
-    Serial1.println("&"); // <DEBUG> send a "I am alive!" to the Pi
+    Serial1.println("&"); // <DEBUG> send a "I am alive!" to the RPi
 
-    if(Serial1.find("$$"))// test the received buffer for SOM_CHAR_SR. This indicates a start of message from the RPi
+    
+    if(Serial1.find(RPI_SOM))// test the received buffer for SOM_CHAR_SR. This indicates a start of message from the RPi
     {
       
       /* 
@@ -952,12 +1007,12 @@ void readRPiBuffer(void)
 
 
       cnt_savedMessage              = 0;
-      RPImessage[cnt_savedMessage]  = '$';
+      RPImessage[cnt_savedMessage]  = '$'; // <TODO> Check if we only need 1 or 2 : needed for parsing function
       cnt_savedMessage ++;
 
       unsigned long startedWaiting = millis();
 
-      while((RPImessage[cnt_savedMessage-1] != ']') && (millis() - startedWaiting <= RPI_DEPILE_TIMEOUT) && (cnt_savedMessage < RX_BUFFER_SIZE))
+      while((RPImessage[cnt_savedMessage-1] != ']') && (millis() - startedWaiting <= RPI_DEPILE_TIMEOUT) && (cnt_savedMessage < RX_BUFFER_SIZE)) // <TODO> use "RPI_EOM"
       {
         if (Serial1.available())
         {
@@ -969,7 +1024,7 @@ void readRPiBuffer(void)
       if ((RPImessage[cnt_savedMessage-1] == ']')) // if any EOM found then we parse
       {
         delay(1);             // YES, it IS ABSOLUTELY necessay, do NOT remove it
-        parseRPiData();
+        parseRPiData();       // <DEBUG> This function is actually empty, this is a placeholder
       }
     }
     memset(RPImessage, 0, RX_BUFFER_SIZE); // clean the message field anyway
@@ -1011,16 +1066,57 @@ void calibrationError(uint8_t errorCode)
       }
       case 3 :
       {
+        #ifdef SERIAL_VERBOSE
+        Serial.println("Error during RIGHT search: 2 ISR flag set = 2 LS triggered, should never happen");
+        #endif
         break;
       }
       case 4 :
       {
+        #ifdef SERIAL_VERBOSE
+        Serial.println("Error during RIGHT LS search: right ISR flag was NOT set");
+        #endif
         break;
       }
       case 5 :
       {
         #ifdef SERIAL_VERBOSE
-        Serial.println("Timeout for right LS search, that's BAD");
+        Serial.println("Error during RIGHT LS search: Timeout");
+        #endif
+        break;
+      }
+      case 6 :
+      {
+        #ifdef SERIAL_VERBOSE
+        Serial.println("Error during LEFT search: 2 ISR flag set = 2 LS triggered, should never happen");
+        #endif
+        break;
+      }
+      case 7 :
+      {
+        #ifdef SERIAL_VERBOSE
+        Serial.println("Error during LEFT LS search: left ISR flag was NOT set");
+        #endif
+        break;
+      }
+      case 8 :
+      {
+        #ifdef SERIAL_VERBOSE
+        Serial.println("Error during LEFT LS search: Timeout");
+        #endif
+        break;
+      }
+      case 9 :
+      {
+        #ifdef SERIAL_VERBOSE
+        Serial.println("Error during calibration coefficient calculation: totalPossibleTravel_MM too small");
+        #endif
+        break;
+      }
+      case 10 :
+      {
+        #ifdef SERIAL_VERBOSE
+        Serial.println("Error during calibration coefficient calculation: totalPossibleTravel_uSteps too small");
         #endif
         break;
       }
