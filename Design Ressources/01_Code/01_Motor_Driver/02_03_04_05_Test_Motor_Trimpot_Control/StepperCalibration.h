@@ -40,9 +40,11 @@ const unsigned long STEPPER_CALIB_REACH_LS_L_TIMEOUT_MS         = 12000;    // i
 // Stepper calibration
 //---------------------
 
-float   distanceBetweenLS_MM      = 500.0;      // For stepper calibration
-long    distanceBetweenLS_uSteps  = 0;          // For stepper calibration
-float   ustepsPerMM_calib         = 0.0;        // This parameter holds the calibration parameter
+float   distanceBetweenLS_MM          = 580.0;      // For stepper calibration, might be changed by RPI commands
+float   tableLength_MM                = 400.0;      // For stepper calibration, might be changed by RPI commands
+float   totalPossibleTravel_MM        = 0.0;      // For stepper calibration, is calculated during calibration by equation
+long    totalPossibleTravel_uSteps    = 0;          // For stepper calibration, is changed during calibration
+float   ustepsPerMM_calib             = 0.0;        // This parameter holds the calibration parameter
 
 
 
@@ -52,7 +54,8 @@ bool    needCalibration           = true;       // Indicates if there is a curre
 bool    executingCalib            = false;      // Indicates if we are currently in distance calibration with the Limit Switches
 bool    calibrationSuccess        = false;      // A variable that tells if the calibration was sucessful
 
-
+// Calibration error code
+//------------------------
 
 
 // END OF THE FILE

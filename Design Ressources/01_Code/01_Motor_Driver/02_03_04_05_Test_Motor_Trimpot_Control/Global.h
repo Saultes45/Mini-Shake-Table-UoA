@@ -66,7 +66,7 @@ const uint16_t MS_DEBOUNCE_TIME         = 50;      // mode switch button debounc
 volatile bool           flagMode            = false;
 volatile unsigned long  last_interrupt_time = 0;
 
-// -------------------------- Functions declaration [15] --------------------------
+// -------------------------- Functions declaration [16] --------------------------
 void      pinSetUp                (void);
 void      attachISRs              (void);
 void      enableTrimpots          (bool enableOrder);
@@ -83,6 +83,7 @@ void      executeScenario         (void);
 void      flushReceiveAndTransmit (void);
 void      readRPiBuffer           (void);
 void      parseRPiData            (void);
+void      calibrationError        (uint8_t errorCode);
 
 
 
@@ -110,6 +111,7 @@ void LS_r_ISR()
       if(executingCalib)
       {
         // <DEBUG> <DO we have to have this?>
+        stepper.stop();
       }
       else
       {
@@ -156,6 +158,7 @@ void LS_l_ISR()
       if(executingCalib)
       {
         // <DEBUG> <DO we have to have this?>
+        stepper.stop();
       }
       else
       {
@@ -233,7 +236,7 @@ void timerTrimpotISR()
 
 
 /*------------------------------------------------------*/
-/*-------------------- Functions [9] -------------------*/
+/*-------------------- Functions [10] -------------------*/
 /*------------------------------------------------------*/
 
 //******************************************************************************************
@@ -405,7 +408,7 @@ void  moveTableToCenter   (void)
 
   #ifdef SERIAL_VERBOSE
     Serial.println("Function moveTableToCenter called. For this to work, the stepper must be ALREADY enabled");
-    Serial.printf("Moving table back to the center position: %ld [mm] ... ", (long)(distanceBetweenLS_MM/2.0 * ustepsPerMM_calib));
+    Serial.printf("Moving table back to the center position: %ld [mm], distance to go is %ld [mm] ... ", (long)(0), (long)(stepper.currentPosition() / ustepsPerMM_calib));
   #endif
 
   if (abortMovement == false)
@@ -445,9 +448,17 @@ void  calibrateStepper (void) // <TODO> This is currently a placeholder, use the
     Serial.println("Function calibrateStepper called. For this to work, the stepper must be ALREADY enabled");
   #endif
 
-  if ( (needCalibration == true) && (abortMovement == false) )
+  if ( (needCalibration == true) && (abortMovement == false) ) // <DEBUG> Why no check for "executingCalib"
   {
-    executingCalib = true; // set the boolean state // <DEBUG> might be redundant
+    executingCalib  = true; // set the boolean state // <DEBUG> might be redundant
+    flagLS_l        = false;
+    flagLS_r        = false;
+
+    // Calculate the distance the table is going to move
+    totalPossibleTravel_MM = distanceBetweenLS_MM - tableLength_MM;
+
+    // Reset the variable
+    totalPossibleTravel_uSteps = 0;
 
     #ifdef SERIAL_VERBOSE
       Serial.println("Starting calibration now");
@@ -457,14 +468,15 @@ void  calibrateStepper (void) // <TODO> This is currently a placeholder, use the
     //* If the table is touching both (2) LSs, ABORT, beacause that should not happen
     if ( not( (digitalRead(PIN_LIMIT_RIGHT) == 1) && (digitalRead(PIN_LIMIT_LEFT) == 1) ) )
     {
-      Serial.println("At least 1 of the LS is NOT ON"); // <DEBUG>
+      Serial.println("At least 1 of the LS is NOT ON");
 
       //* If the table is touching ONLY 1 LS, then move the other direction
-      while((digitalRead(PIN_LIMIT_RIGHT) == 1) || (digitalRead(PIN_LIMIT_LEFT) == 1))
+      while((digitalRead(PIN_LIMIT_RIGHT) == 1) || (digitalRead(PIN_LIMIT_LEFT) == 1)) // <TODO> add a security to avoid getting stuck, ie if the motor or the LS are not working
       {
-        Serial.println("At least 1 of the 2 LS is ON, detriggering now"); // <DEBUG>
-        // <TODO> take into account the direction
-        // The stepper should already be enabled
+        Serial.println("At least 1 of the 2 LS is ON, detriggering now");
+
+        flagLS_l        = false;
+        flagLS_r        = false;
 
         // Let's move to the LEFT (-) if RIGHT is triggered: RELATIVE
         stepper.setMaxSpeed(calibrationSpeedMicroStepsPerSeconds_max);
@@ -476,60 +488,132 @@ void  calibrateStepper (void) // <TODO> This is currently a placeholder, use the
           stepper.runSpeed();
         }
 
-        Serial.println("Detriggereing movement done, was that enough?"); // <DEBUG>
-        // Serial.print("abortCalibration:"); // <DEBUG>
-        // Serial.println(abortCalibration); // <DEBUG>
+        Serial.println("De-triggereing movement done. Was that enough though?"); // <DEBUG>
       }
 
-      //* Wherever the motor is NOW, move right until the RIGHT LS is triggerd (or timeout), if the LFT one triggers, ABORT
-      #ifdef SERIAL_VERBOSE
-        Serial.println("Trying to reach the 1st LS: the RIGHT one, waiting for an ISR trigger...");
-      #endif
-
-      // Let's move to the RIGHT: RELATIVE
-      stepper.setMaxSpeed(calibrationSpeedMicroStepsPerSeconds_max);
-      stepper.move( (long)(+1 * calibrationExplorationMicroSteps) ); // This RELATIVE!
-      stepper.setSpeed(((stepper.distanceToGo() > 0) ? +1.0 : -1.0) * calibrationSpeedMicroStepsPerSeconds_normal);
-      // printStepperState();
-      unsigned long startedWaiting = millis();
-      Serial.println("Started the run "); // <DEBUG>
-      while ( (stepper.distanceToGo() != 0) && (abortMovement == false)  && (millis() - startedWaiting <= STEPPER_CALIB_REACH_LS_R_TIMEOUT_MS) )
+      if (abortMovement == false)
       {
-        stepper.runSpeed();
-      }
-      #ifdef SERIAL_VERBOSE
-        Serial.println("Run ended, why?"); // <DEBUG>
-      #endif
-
-      if( (millis() - startedWaiting <= STEPPER_CALIB_REACH_LS_R_TIMEOUT_MS) )
-      {
+        //------------------------------------------------------------------------------------------------------------------------
+        //* Wherever the motor is NOW, move right until the RIGHT LS is triggerd (or timeout), if the LFT one triggers, ABORT
         #ifdef SERIAL_VERBOSE
-        Serial.println("No timeout for right LS search, that's good"); // <DEBUG>
+          Serial.println("Trying to reach the 1st LS: the RIGHT one, waiting for an ISR trigger...");
         #endif
 
-        if(flagLS_r)
+        flagLS_l        = false;
+        flagLS_r        = false;
+
+        // Let's move to the RIGHT (+): RELATIVE
+        //--------------------------------------
+        stepper.setMaxSpeed(calibrationSpeedMicroStepsPerSeconds_max);
+        stepper.move( (long)(+1 * calibrationExplorationMicroSteps) ); // This RELATIVE!
+        stepper.setSpeed(((stepper.distanceToGo() > 0) ? +1.0 : -1.0) * calibrationSpeedMicroStepsPerSeconds_normal);
+        // printStepperState();
+        unsigned long startedWaiting = millis();
+        Serial.println("Started the run ");
+        // We wait here for the ISR associated with the 
+        while ( (stepper.distanceToGo() != 0) && (abortMovement == false)  && (millis() - startedWaiting <= STEPPER_CALIB_REACH_LS_R_TIMEOUT_MS) )
+        {
+          stepper.runSpeed();
+        }
+        #ifdef SERIAL_VERBOSE
+          Serial.println("Run ended, why?");
+        #endif
+
+        if( (millis() - startedWaiting <= STEPPER_CALIB_REACH_LS_R_TIMEOUT_MS) )
         {
           #ifdef SERIAL_VERBOSE
-          Serial.println("The correct LS (the RIGHT) has been triggered, that's good"); // <DEBUG>
+          Serial.println("No timeout for right LS search, that's good");
           #endif
+
+          if(flagLS_r)
+          {
+            #ifdef SERIAL_VERBOSE
+            Serial.println("The correct LS (the RIGHT) has been triggered, that's good");
+            #endif
+          }
+          else
+          {
+            calibrationError(4);
+          }
+
+        }
+        else
+        {
+          calibrationError(5);
         }
 
-      }
-      else
-      {
+        // Set the right-most position TEMPORARY as 0 to make the step counting easy as
+        stepper.setCurrentPosition(0);
+
+        //------------------------------------------------------------------------------------------------------------------------
+        //Move right until the LEFT LS is triggerd (or timeout), if the RIGHT one triggers, ABORT
         #ifdef SERIAL_VERBOSE
-        Serial.println("Timeout for right LS search, that's BAD");
-        Serial.println("Aborting calibration");
+          Serial.println("Trying to reach the 1st LS: the RIGHT one, waiting for an ISR trigger...");
         #endif
-        calibrationSuccess  = false;
-        abortMovement       = true;
+
+        flagLS_l        = false;
+        flagLS_r        = false;
+
+        // Let's move to the RIGHT (+): RELATIVE
+        //--------------------------------------
+        stepper.setMaxSpeed(calibrationSpeedMicroStepsPerSeconds_max);
+        stepper.move( (long)(+1 * calibrationExplorationMicroSteps) ); // This RELATIVE!
+        stepper.setSpeed(((stepper.distanceToGo() > 0) ? +1.0 : -1.0) * calibrationSpeedMicroStepsPerSeconds_normal);
+        // printStepperState();
+        unsigned long startedWaiting = millis();
+        Serial.println("Started the run ");
+        // We wait here for the ISR associated with the 
+        while ( (stepper.distanceToGo() != 0) && (abortMovement == false)  && (millis() - startedWaiting <= STEPPER_CALIB_REACH_LS_R_TIMEOUT_MS) )
+        {
+          stepper.runSpeed();
+        }
+        #ifdef SERIAL_VERBOSE
+          Serial.println("Run ended, why?");
+        #endif
+
+        if( (millis() - startedWaiting <= STEPPER_CALIB_REACH_LS_R_TIMEOUT_MS) )
+        {
+          #ifdef SERIAL_VERBOSE
+          Serial.println("No timeout for right LS search, that's good"); // <DEBUG>
+          #endif
+
+          if(flagLS_r)
+          {
+            #ifdef SERIAL_VERBOSE
+            Serial.println("The correct LS (the RIGHT) has been triggered, that's good"); // <DEBUG>
+            #endif
+          }
+
+        }
+        else
+        {
+          calibrationError(5);
+        }
+
+
+        // Save the current position as the total distance the table travelled
+        totalPossibleTravel_uSteps = abs(stepper.currentPosition());
       }
-
-      // Set the rightmost position TEMPORARY as 0 to make the step counting easy as
-      stepper.setCurrentPosition(0);
-
+      else // abort due to De-triggereing
+      {
+        calibrationError(2);
+      }
     }
+    else //* If the table is touching both (2) LSs, ABORT, beacause that should not happen
+    {      
+      calibrationError(1);
+    }
+  }  
+  else //(needCalibration == true) && (abortMovement == false)
+  {
+    calibrationError(0);
+    // <DEBUG> do not change the state of "calibrationSuccess"
   }
+
+  // Conversion factor calculation
+  //------------------------------
+
+  ustepsPerMM_calib = ( (float)( totalPossibleTravel_uSteps ) ) / totalPossibleTravel_MM ;
 
   // End of the function boolean states
   //-----------------------------------
@@ -900,6 +984,68 @@ void parseRPiData(void)
 
 }// END OF THE FUNCTION
 
+//******************************************************************************************
+void calibrationError(uint8_t errorCode)
+{
+  #ifdef SERIAL_VERBOSE
+  Serial.println(" /!\\ Calibration error /!\\");
+  Serial.printf("Error code: %d \r\n", errorCode);
+  Serial.print("Explanation: ");
+  #endif
+
+  switch(errorCode) 
+  {
+      case 0 :
+      {
+        #ifdef SERIAL_VERBOSE
+        Serial.println("Calibration is called but is currently unnecessary");
+        #endif
+        break;
+      }
+      case 2 :
+      {
+        #ifdef SERIAL_VERBOSE
+        Serial.println("Error during de-triggereing");
+        #endif
+        break;
+      }
+      case 3 :
+      {
+        break;
+      }
+      case 4 :
+      {
+        break;
+      }
+      case 5 :
+      {
+        #ifdef SERIAL_VERBOSE
+        Serial.println("Timeout for right LS search, that's BAD");
+        #endif
+        break;
+      }
+      default :
+      {
+        #ifdef SERIAL_VERBOSE
+        Serial.println("Unknown error code");
+        #endif
+        break;
+      }
+   }
+
+
+  #ifdef SERIAL_VERBOSE
+  Serial.print("Setting boolean states ... ");
+  #endif
+
+  calibrationSuccess  = false;
+  abortMovement       = true;
+
+  #ifdef SERIAL_VERBOSE
+  Serial.println("done");
+  #endif
+
+}// END OF THE FUNCTION
 
 
 
