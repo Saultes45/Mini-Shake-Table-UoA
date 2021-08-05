@@ -42,7 +42,9 @@
 
 
 // -------------------------- Defines --------------------------
+
 // General
+//---------
 #define SERIAL_VERBOSE                        // Uncomment to see more debug messages
 #define WAIT_FOR_SERIAL                       // Uncomment to wait for the serial port to be opened from the PC end before starting
 #define CONSOLE_BAUD_RATE             115200  // Baudrate in [bauds] for serial communication to the console (USB-C of the XIAO)
@@ -52,11 +54,16 @@
 // Mode selection
 //---------------
 const uint8_t PIN_TOGGLE_MODE           = 8;
-const uint16_t MS_DEBOUNCE_TIME         = 50;      // mode switch button debouncing time in [ms]
+const uint16_t MS_DEBOUNCE_TIME         = 50; // Mode switch button debouncing time in [ms]
 
 // Modes
-#define MODE_SCENARIO   0u  // Wait orders and scenarios from the Raspberry pi through raspberry pi 30 pin connector (HW UART on the XIAO)
-#define MODE_MANUAL     1u  // Use the 2 trimpots to execute the motion
+//------
+#define MODE_SCENARIO   0u                    // Wait orders and scenarios from the Raspberry pi through raspberry pi 30 pin connector (HW UART on the XIAO)
+#define MODE_MANUAL     1u                    // Use the 2 trimpots to execute the motion
+
+// Modes
+//------
+const int TIME_TO_WAIT_IDLE_MS          = 250;  // Time to wait in the switch case when there is no tasks in [ms]
 
 
 // -------------------------- Global variables ----------------

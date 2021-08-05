@@ -197,7 +197,7 @@ void loop()
 			}
 			else
 			{
-				delay(250); // wait a bit for another action from the user, like > 0 trimpots or mode change 
+				delay(TIME_TO_WAIT_IDLE_MS); // wait a bit for another action from the user, like > 0 trimpots or mode change 
 			}
 			
 			break;
@@ -216,6 +216,10 @@ void loop()
 			else if ( (executingScenario) && not(needScenario) && (abortMovement == false) )// Then you execute the scenario that has been prepared
 			{
 				executeScenario();
+			}
+      else
+			{
+				delay(TIME_TO_WAIT_IDLE_MS); // wait a bit for another action from the user, like > 0 trimpots or mode change 
 			}
 
 			break;
