@@ -40,7 +40,7 @@
 // -------------------------- Global variables ----------------
 // moved in "Global.h"
 
-// -------------------------- Functions declaration [7] --------------------------
+// -------------------------- Functions declaration  --------------------------
 // moved in "Global.h"
 
 
@@ -55,7 +55,7 @@ void setup()
 	// -----------------------------------------------
 	Serial.begin(CONSOLE_BAUD_RATE); //Begin serial communication (USB)
 	#ifdef WAIT_FOR_SERIAL
-	while (! Serial); // Wait for user to open the com port // <DEBUG> THIS IS ULATRA DANGEROUS
+	while (! Serial); // Wait for user to open the com port // <DEBUG> THIS IS ULTRA DANGEROUS
 	#endif
 	delay(1000);
 	Serial.println("---------------------------------");
@@ -64,26 +64,26 @@ void setup()
 	// ------------
 	pinSetUp();
 
-  // Setting some variables
-	// ----------------------
+  // Setting some boolean states
+	// ---------------------------
 	abortMovement            = false;       
 	calibrationSuccess       = false;
 	needCalibration          = true;
-  executingCalib           = true; // This must absolutely be done BEFORE the ISRs // <DEBUG> might be redundant
+  executingCalib           = true; // This must ABSOLUTELY be done BEFORE the ISRs // <DEBUG> might be redundant
 
 	// ISRs
 	// ----
 	attachISRs();
-	enableTrimpots(false); // Disable the trimpot's timer, we will enable them only @ the end of the setup
+	enableTrimpots(false); // Disable the trimpot's timer. It will only be enabled @ the end of the setup
 
 	// Enabling the stepper
 	//---------------------
-	Serial.println("Make sure the manual \"stepper enable\" toggle switch on the front panel is set to the \"ENABLED\"");
+	Serial.println("Make sure the manual \"stepper enable\" toggle switch on the front panel is set to \"ENABLED\"");
 	delay(1000); 
 	Serial.println("/!\\ We are going to ENABLE the stepper, be careful");
 	delay(1000);  
 	enableStepper(true);
-	delay(1000); 
+	delay(1000); // wait for the stepper to "lock" in place
 
 	Serial.println("---------------------------------");
 
@@ -94,8 +94,8 @@ void setup()
   // if there are NO errors then we can continue the setup
 	if (abortMovement == false)
 	{
-    // Move the shake table back to the center to execute the movement of the trimpots
-    delay(5000); // This is to be able to tell the difference between fake calibration and move to center
+    // Move the shake table back to the center before starting any movement
+    //delay(5000); // This is to be able to tell the difference between fake calibration and move to center
     moveTableToCenter(); // You need to have enabled the stepper BEFORE
     Serial.println("The shake table should be centered now. You are ready to go!"); 
 
@@ -126,9 +126,9 @@ void setup()
       Serial.println("---------------------------------"); // Indicates the end of the setup
       
       enableTrimpots(digitalRead(PIN_TOGGLE_MODE)); // We enable the trimpots here only if we the toggle switch is in manual mode
-    }
-	}
-}
+    } //2nd if (abortMovement == false)
+	}//1st if (abortMovement == false)
+} // END OF SET UP
 
 
 
@@ -156,7 +156,7 @@ void loop()
 
 		// Serial.printf("Current mode: %d | %d\r\n", digitalRead(PIN_TOGGLE_MODE), MODE_MANUAL); 
 
-		switch(digitalRead(PIN_TOGGLE_MODE))
+		switch(digitalRead(PIN_TOGGLE_MODE)) // Check which mode we are in: scenario (0) or manual (1)
 		{
       //-----------------------------------------------------------------------------------
 		case MODE_MANUAL:
@@ -171,10 +171,10 @@ void loop()
 
 
 			// Before executing a movement, check that the orders from the trimpots make sense, i.e. > 0?
-			if ( (halfAmplitudeMicroSteps > ((long)0)) && (manual_MicroStepsPerSeconds > 0.0) && (abortMovement == false))
+			if ( (halfAmplitudeMicroSteps > ((long)0)) && (manual_MicroStepsPerSeconds > 0.0) && (abortMovement == false) )
 			{
 
-				// Set the maximum allowed speed for manual control (idenpendant of what can be set by the trimpots 
+				// Set the maximum allowed speed for manual control (idenpendant of what can be set by the trimpots) 
 				stepper.setMaxSpeed(manualSpeedMicroStepsPerSeconds);
 				stepper.setAcceleration(manualSpeedMicroStepsPerSecondsPerSeconds);
 				
@@ -220,18 +220,21 @@ void loop()
 
 			break;
    }
-			default:
-      {
+    default:
+    {
 			Serial.println("Impossible mode selected, it must be either Manual or Scenario");
 //     break;
-      }
+    }
+
 		}// END SWITCH manual/scenario
+
 	} // if abort movement is false
 	else
 	{
-		// If there has been an error, make sure a scenario restart at the its beginning
+		// If there has been an error, make sure the future scenario restarts at the its beginning
 		executingScenario = false;
 	}
+  
 }// END OF THE LOOP
 
 
